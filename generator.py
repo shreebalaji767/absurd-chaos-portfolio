@@ -15,9 +15,9 @@ OUTPUT_DIR = ROOT / "generated"
 OUTPUT_FILE = OUTPUT_DIR / "index.html"
 
 
-# ==============================================================
-# RANDOM HELPERS
-# ==============================================================
+# =========================================================
+# HELPERS
+# =========================================================
 
 def choose_many(rng, values, minimum=2, maximum=5):
     if not values:
@@ -26,34 +26,27 @@ def choose_many(rng, values, minimum=2, maximum=5):
     maximum = min(maximum, len(values))
     minimum = min(minimum, maximum)
 
-    if maximum <= 0:
-        return []
-
-    return rng.sample(
-        values,
-        rng.randint(minimum, maximum),
-    )
+    return rng.sample(values, rng.randint(minimum, maximum))
 
 
 def unique_choices(rng, values, count):
     if not values:
         return []
 
-    count = min(count, len(values))
-
-    if count <= 0:
-        return []
+    if len(values) <= count:
+        return list(values)
 
     return rng.sample(values, count)
 
 
 def article_for(value):
     """
-    Safely creates 'a/an <value>'.
+    Small grammar helper.
 
-    This is intentionally kept in the generator so generated
-    metadata can be grammatically safe without forcing the
-    browser renderer to guess.
+    Example:
+        incident -> an incident
+        project -> a project
+        platform -> a platform
     """
     value = str(value or "").strip()
 
@@ -68,26 +61,15 @@ def article_for(value):
     return f"a {value}"
 
 
-def safe_text(value, fallback="Unknown"):
-    value = str(value or "").strip()
-    return value if value else fallback
+def clean_text(value):
+    return str(value or "").strip()
 
 
-def unique_npc_name(rng, first_names, last_names, used_names):
+def unique_name(rng, first_names, last_names, used_names):
     """
-    Generate a unique NPC name for the current build.
-
-    The old generator could produce duplicates such as:
-    Yuna Quill
-    Yuna Quill
-
-    That is now prevented.
+    Generates a unique NPC name for this build.
     """
-
-    attempts = 0
-    maximum_attempts = 250
-
-    while attempts < maximum_attempts:
+    for _ in range(200):
         first = rng.choice(first_names)
         last = rng.choice(last_names)
         name = f"{first} {last}"
@@ -96,10 +78,7 @@ def unique_npc_name(rng, first_names, last_names, used_names):
             used_names.add(name)
             return first, last, name
 
-        attempts += 1
-
     # Extremely unlikely fallback.
-    # Still deterministic enough for the current build.
     index = len(used_names) + 1
     first = rng.choice(first_names)
     last = rng.choice(last_names)
@@ -110,9 +89,9 @@ def unique_npc_name(rng, first_names, last_names, used_names):
     return first, last, name
 
 
-# ==============================================================
+# =========================================================
 # CONFIGURATION
-# ==============================================================
+# =========================================================
 
 def build_config():
     rng = random.SystemRandom()
@@ -120,9 +99,9 @@ def build_config():
     config = {
         "version": "3.0.0",
 
-        # ======================================================
+        # =====================================================
         # CORE IDENTITY
-        # ======================================================
+        # =====================================================
 
         "names": [
             "Ari Voss",
@@ -276,9 +255,9 @@ def build_config():
             "Station Zero",
         ],
 
-        # ======================================================
+        # =====================================================
         # WORLDS
-        # ======================================================
+        # =====================================================
 
         "worlds": [
             {
@@ -465,9 +444,9 @@ def build_config():
             },
         ],
 
-        # ======================================================
+        # =====================================================
         # FACTIONS
-        # ======================================================
+        # =====================================================
 
         "factions": [
             "Department of Unnecessary Architecture",
@@ -496,9 +475,9 @@ def build_config():
             "The Professional Monster Negotiators",
         ],
 
-        # ======================================================
+        # =====================================================
         # PROJECT VOCABULARY
-        # ======================================================
+        # =====================================================
 
         "project_types": [
             "platform",
@@ -620,9 +599,9 @@ def build_config():
             "the original client requested a sequel",
         ],
 
-        # ======================================================
+        # =====================================================
         # EXPERIENCE
-        # ======================================================
+        # =====================================================
 
         "experience_roles": [
             "field systems engineer",
@@ -682,9 +661,9 @@ def build_config():
             "I learned that the strangest production problems usually begin as reasonable requirements.",
         ],
 
-        # ======================================================
+        # =====================================================
         # NPC SYSTEM
-        # ======================================================
+        # =====================================================
 
         "npc_first": [
             "Aki",
@@ -872,9 +851,9 @@ def build_config():
             "You should probably stop opening doors marked internal.",
         ],
 
-        # ======================================================
+        # =====================================================
         # INCIDENTS
-        # ======================================================
+        # =====================================================
 
         "incident_types": [
             "deployment anomaly",
@@ -919,9 +898,9 @@ def build_config():
             "the problem resolved itself immediately after being documented",
         ],
 
-        # ======================================================
+        # =====================================================
         # QUESTS
-        # ======================================================
+        # =====================================================
 
         "quests": [
             "repair the infrastructure before the next artificial eclipse",
@@ -961,9 +940,9 @@ def build_config():
             "a favor owed by someone extremely dangerous",
         ],
 
-        # ======================================================
-        # NARRATIVE
-        # ======================================================
+        # =====================================================
+        # STORY MATERIAL
+        # =====================================================
 
         "story_hooks": [
             "The assignment began as a routine maintenance request.",
@@ -1008,9 +987,9 @@ def build_config():
             "I would do it again, preferably with better documentation.",
         ],
 
-        # ======================================================
-        # STATUS / WORLD STATE
-        # ======================================================
+        # =====================================================
+        # STATUS / RISK
+        # =====================================================
 
         "statuses": [
             "ONLINE",
@@ -1040,9 +1019,9 @@ def build_config():
             "UNDEFINED",
         ],
 
-        # ======================================================
+        # =====================================================
         # WORLD LORE
-        # ======================================================
+        # =====================================================
 
         "world_rules": [
             "Every promise becomes a contract after midnight.",
@@ -1077,14 +1056,9 @@ def build_config():
             "the world has discovered that its official map is wrong",
         ],
 
-        # ======================================================
-        # UI SYSTEM
-        #
-        # IMPORTANT:
-        # The UI system is deliberately preserved.
-        # The browser renderer chooses from these values for
-        # every generated portfolio.
-        # ======================================================
+        # =====================================================
+        # UI SYSTEM — PRESERVED
+        # =====================================================
 
         "ui_families": [
             "executive",
@@ -1154,9 +1128,9 @@ def build_config():
             "none",
         ],
 
-        # ======================================================
-        # GENERATED BUILD MATERIAL
-        # ======================================================
+        # =====================================================
+        # GENERATED MATERIAL
+        # =====================================================
 
         "generated_project_seeds": [],
         "generated_npc_seeds": [],
@@ -1165,35 +1139,19 @@ def build_config():
         "generated_incident_seeds": [],
         "generated_quest_seeds": [],
 
-        # ======================================================
-        # BUILD IDENTITY
-        # ======================================================
-
         "build_identity": f"{rng.getrandbits(64):016x}",
     }
 
-    # ==========================================================
-    # BUILD-TIME UI DNA
+    # =========================================================
+    # PROJECT SEEDS
     #
-    # These are intentionally generated once at build time.
-    # app.js can still generate a different portfolio/UI on
-    # every browser refresh using its own runtime randomness.
-    # ==========================================================
+    # IMPORTANT:
+    # Projects are deliberately STRUCTURED.
+    # The frontend should render these as cards/subcards,
+    # not as one giant narrative paragraph.
+    # =========================================================
 
-    config["ui_seed"] = {
-        "family": rng.choice(config["ui_families"]),
-        "layout": rng.choice(config["layouts"]),
-        "navigation": rng.choice(config["navs"]),
-        "hero_mode": rng.choice(config["hero_modes"]),
-        "density": rng.choice(config["densities"]),
-        "decoration": rng.choice(config["decorations"]),
-    }
-
-    # ==========================================================
-    # BUILD-TIME PROJECT SEEDS
-    # ==========================================================
-
-    industries = [
+    project_industries = [
         "healthcare technology",
         "financial infrastructure",
         "logistics",
@@ -1211,31 +1169,10 @@ def build_config():
         "commerce",
     ]
 
-    used_project_signatures = set()
-
     for index in range(64):
         world = rng.choice(config["worlds"])
-        project_name = rng.choice(config["project_names"])
         project_type = rng.choice(config["project_types"])
-        industry = rng.choice(industries)
-
-        signature = (
-            project_name,
-            project_type,
-            world["name"],
-        )
-
-        if signature in used_project_signatures:
-            # Keep variety high without creating an infinite loop.
-            project_name = f"{project_name} {index + 1}"
-
-        used_project_signatures.add(
-            (
-                project_name,
-                project_type,
-                world["name"],
-            )
-        )
+        project_name = rng.choice(config["project_names"])
 
         problem = rng.choice(config["project_problems"])
         solution = rng.choice(config["project_solutions"])
@@ -1252,149 +1189,264 @@ def build_config():
         config["generated_project_seeds"].append(
             {
                 "id": f"project-{index + 1:03d}",
-                "index": index + 1,
+
                 "name": project_name,
                 "type": project_type,
-                "industry": industry,
+
+                "industry": rng.choice(project_industries),
+
                 "world": world["name"],
+
+                "status": rng.choice(config["statuses"]),
+
+                "risk": rng.choice(config["risk_levels"]),
+
+                "client": rng.choice(config["factions"]),
+
+                # Short card headline.
+                "headline": (
+                    f"{project_name} — "
+                    f"{project_type}"
+                ),
+
+                # Structured card fields.
                 "problem": problem,
                 "solution": solution,
                 "failure": failure,
                 "outcome": outcome,
+
                 "technology": technologies,
 
-                # Card-ready fields.
-                "summary": (
-                    f"{project_name} was built as "
-                    f"{article_for(project_type)} for {industry} "
-                    f"inside {world['name']}."
+                # Small metadata, useful for visual cards.
+                "duration_years": rng.randint(1, 6),
+
+                "team_size": rng.randint(2, 24),
+
+                "deployment_count": rng.randint(
+                    12,
+                    1200,
                 ),
-                "challenge_card": problem,
-                "solution_card": solution,
-                "failure_card": failure,
-                "outcome_card": outcome,
-                "technology_cards": technologies,
-                "status": rng.choice(config["statuses"]),
-                "risk": rng.choice(config["risk_levels"]),
+
+                "impact": rng.choice(
+                    [
+                        "reduced operational chaos",
+                        "improved system visibility",
+                        "stabilized critical infrastructure",
+                        "recovered historical data",
+                        "automated repetitive operations",
+                        "connected incompatible systems",
+                        "prevented recurring incidents",
+                        "created a reliable source of truth",
+                        "made impossible states observable",
+                    ]
+                ),
+
+                # Compact visual labels.
+                "labels": unique_choices(
+                    rng,
+                    [
+                        "architecture",
+                        "automation",
+                        "reliability",
+                        "infrastructure",
+                        "recovery",
+                        "observability",
+                        "security",
+                        "deployment",
+                        "data",
+                        "systems",
+                        "integration",
+                    ],
+                    rng.randint(2, 4),
+                ),
             }
         )
 
-    # ==========================================================
-    # BUILD-TIME NPC SEEDS
-    # ==========================================================
+    # =========================================================
+    # NPC SEEDS
+    #
+    # Unique names within this generated portfolio.
+    # =========================================================
 
     used_npc_names = set()
 
     for index in range(80):
         world = rng.choice(config["worlds"])
 
-        first, last, full_name = unique_npc_name(
+        first, last, name = unique_name(
             rng,
             config["npc_first"],
             config["npc_last"],
             used_npc_names,
         )
 
-        role = rng.choice(config["npc_roles"])
-        npc_type = rng.choice(config["npc_types"])
-        trait = rng.choice(config["npc_traits"])
-        relationship = rng.choice(config["npc_relationships"])
-        secret = rng.choice(config["npc_secrets"])
-        dialogue = rng.choice(config["npc_dialogue"])
-        status = rng.choice(config["statuses"])
-        risk = rng.choice(config["risk_levels"])
-
         config["generated_npc_seeds"].append(
             {
                 "id": f"npc-{index + 1:03d}",
-                "index": index + 1,
 
-                "name": full_name,
+                "name": name,
                 "first": first,
                 "last": last,
 
-                "role": role,
-                "type": npc_type,
-                "trait": trait,
-                "relationship": relationship,
-                "secret": secret,
-                "dialogue": dialogue,
-                "status": status,
-                "world": world["name"],
-                "risk": risk,
+                "role": rng.choice(
+                    config["npc_roles"]
+                ),
 
-                # Card-oriented presentation data.
-                "identity": f"{npc_type} · {role}",
-                "relationship_card": relationship,
-                "personality_card": trait,
-                "secret_card": secret,
-                "dialogue_card": dialogue,
+                "type": rng.choice(
+                    config["npc_types"]
+                ),
+
+                "trait": rng.choice(
+                    config["npc_traits"]
+                ),
+
+                "relationship": rng.choice(
+                    config["npc_relationships"]
+                ),
+
+                "secret": rng.choice(
+                    config["npc_secrets"]
+                ),
+
+                "dialogue": rng.choice(
+                    config["npc_dialogue"]
+                ),
+
+                "status": rng.choice(
+                    config["statuses"]
+                ),
+
+                "world": world["name"],
+
+                "risk": rng.choice(
+                    config["risk_levels"]
+                ),
+
+                "faction": rng.choice(
+                    config["factions"]
+                ),
             }
         )
 
-    # ==========================================================
-    # BUILD-TIME WORLD SEEDS
-    # ==========================================================
+    # =========================================================
+    # WORLD SEEDS
+    #
+    # World descriptions stay short.
+    # Lore is broken into compact fields for cards.
+    # =========================================================
 
     for index, world in enumerate(config["worlds"], start=1):
-        rules = unique_choices(
-            rng,
-            config["world_rules"],
-            3,
-        )
-
-        conflicts = unique_choices(
-            rng,
-            config["world_conflicts"],
-            2,
-        )
-
-        factions = choose_many(
-            rng,
-            config["factions"],
-            2,
-            5,
-        )
-
         config["generated_world_seeds"].append(
             {
                 "id": f"world-{index:03d}",
-                "index": index,
 
                 "name": world["name"],
                 "genre": world["genre"],
+
                 "description": world["description"],
+
                 "sky": world["sky"],
+
                 "technology": world["technology"],
+
                 "social_rule": world["social_rule"],
+
                 "danger": world["danger"],
 
-                # Multiple compact lore cards.
-                "rule": rng.choice(config["world_rules"]),
-                "rules": rules,
-                "conflict": rng.choice(config["world_conflicts"]),
-                "conflicts": conflicts,
-                "factions": factions,
+                "rule": rng.choice(
+                    config["world_rules"]
+                ),
 
-                "state": rng.choice(config["statuses"]),
-                "risk": rng.choice(config["risk_levels"]),
+                "conflict": rng.choice(
+                    config["world_conflicts"]
+                ),
+
+                "factions": choose_many(
+                    rng,
+                    config["factions"],
+                    2,
+                    5,
+                ),
+
+                "status": rng.choice(
+                    config["statuses"]
+                ),
+
+                "risk": rng.choice(
+                    config["risk_levels"]
+                ),
             }
         )
 
-    # ==========================================================
-    # BUILD-TIME EXPERIENCE SEEDS
-    # ==========================================================
+    # =========================================================
+    # EXPERIENCE SEEDS
+    #
+    # IMPORTANT:
+    # No huge narrative field.
+    #
+    # Every experience is intentionally broken into:
+    #
+    #   overview
+    #   incident
+    #   response
+    #   lesson
+    #   achievements
+    #   technologies
+    #
+    # This lets the frontend build rich cards without
+    # creating enormous walls of text.
+    # =========================================================
+
+    experience_achievements = [
+        "stabilized the production environment",
+        "recovered undocumented infrastructure",
+        "reduced recurring deployment failures",
+        "introduced structured observability",
+        "reconstructed missing architecture documentation",
+        "automated repetitive operational tasks",
+        "created a reliable recovery path",
+        "reduced dependency on manual intervention",
+        "connected previously isolated systems",
+        "made hidden failures visible",
+        "introduced explicit service ownership",
+        "recovered data from an unstable source",
+        "designed a safer deployment workflow",
+        "built tooling around an undocumented system",
+        "created operational documentation",
+        "prevented the same incident from recurring",
+    ]
 
     for index in range(48):
         world = rng.choice(config["worlds"])
         faction = rng.choice(config["factions"])
 
-        opening = rng.choice(config["experience_openings"])
-        incident = rng.choice(config["experience_incidents"])
-        lesson = rng.choice(config["experience_lessons"])
-        hook = rng.choice(config["story_hooks"])
-        turn = rng.choice(config["story_turns"])
-        closing = rng.choice(config["closing_lines"])
+        role = rng.choice(
+            config["experience_roles"]
+        )
+
+        opening = rng.choice(
+            config["experience_openings"]
+        )
+
+        incident = rng.choice(
+            config["experience_incidents"]
+        )
+
+        lesson = rng.choice(
+            config["experience_lessons"]
+        )
+
+        hook = rng.choice(
+            config["story_hooks"]
+        )
+
+        turn = rng.choice(
+            config["story_turns"]
+        )
+
+        closing = rng.choice(
+            config["closing_lines"]
+        )
 
         technologies = choose_many(
             rng,
@@ -1403,67 +1455,99 @@ def build_config():
             7,
         )
 
-        years = rng.randint(1, 11)
-
         achievements = unique_choices(
             rng,
-            [
-                "stabilized an unstable production environment",
-                "reconstructed missing architecture documentation",
-                "introduced observable deployment workflows",
-                "automated repetitive operational tasks",
-                "recovered a system believed to be permanently lost",
-                "reduced unnecessary infrastructure dependencies",
-                "created an explicit ownership model",
-                "built a recovery procedure for impossible failures",
-                "documented previously undocumented behavior",
-                "connected incompatible systems without replacing them",
-                "turned mysterious failures into traceable incidents",
-                "established a reliable operational baseline",
-                "created a searchable historical record",
-                "prevented a recurring deployment catastrophe",
-                "converted an emergency workaround into maintainable infrastructure",
-            ],
-            rng.randint(2, 4),
+            experience_achievements,
+            rng.randint(3, 5),
+        )
+
+        years = rng.randint(1, 11)
+
+        # Compact overview instead of a giant paragraph.
+        overview = (
+            f"{opening} "
+            f"{hook}"
+        )
+
+        # Short response card.
+        response = (
+            f"{turn} "
+            f"{rng.choice(config['project_solutions'])}."
         )
 
         config["generated_experience_seeds"].append(
             {
                 "id": f"experience-{index + 1:03d}",
-                "index": index + 1,
 
                 "organization": faction,
+
                 "world": world["name"],
-                "role": rng.choice(config["experience_roles"]),
-                "opening": opening,
-                "incident": incident,
-                "lesson": lesson,
-                "hook": hook,
-                "turn": turn,
-                "closing": closing,
+
+                "role": role,
 
                 "years": years,
-                "technologies": technologies,
-                "status": rng.choice(config["statuses"]),
 
-                # Card-friendly fields.
-                "assignment": opening,
-                "incident_card": incident,
-                "response_card": (
-                    "The response focused on containment, observability, "
-                    "recovery and documenting the actual system behavior."
+                "status": rng.choice(
+                    config["statuses"]
                 ),
-                "lesson_card": lesson,
+
+                "risk": rng.choice(
+                    config["risk_levels"]
+                ),
+
+                # Main card content.
+                "overview": overview,
+
+                "incident": incident,
+
+                "response": response,
+
+                "lesson": lesson,
+
+                "closing": closing,
+
+                # Compact achievement cards.
                 "achievements": achievements,
-                "technology_cards": technologies,
-                "organization_card": faction,
-                "world_card": world["name"],
+
+                # Technology tags.
+                "technologies": technologies,
+
+                # Visual metadata.
+                "team_size": rng.randint(2, 18),
+
+                "systems_touched": rng.randint(
+                    3,
+                    42,
+                ),
+
+                "deployments": rng.randint(
+                    8,
+                    600,
+                ),
+
+                "labels": unique_choices(
+                    rng,
+                    [
+                        "production",
+                        "incident response",
+                        "architecture",
+                        "automation",
+                        "infrastructure",
+                        "recovery",
+                        "observability",
+                        "security",
+                        "platform",
+                        "systems",
+                        "deployment",
+                    ],
+                    rng.randint(3, 5),
+                ),
             }
         )
 
-    # ==========================================================
-    # BUILD-TIME INCIDENT SEEDS
-    # ==========================================================
+    # =========================================================
+    # INCIDENT SEEDS
+    # =========================================================
 
     for index in range(64):
         world = rng.choice(config["worlds"])
@@ -1480,51 +1564,51 @@ def build_config():
             config["incident_consequences"]
         )
 
-        risk = rng.choice(
-            config["risk_levels"]
-        )
-
-        status = rng.choice(
-            config["statuses"]
-        )
-
-        witness = rng.choice(
-            config["npc_first"]
-        )
-
-        # Small structured description instead of forcing the
-        # renderer to create a giant paragraph.
-        headline = (
-            f"{incident_type.title()} reported in "
-            f"{world['name']}."
-        )
-
         config["generated_incident_seeds"].append(
             {
                 "id": f"incident-{index + 1:03d}",
-                "index": index + 1,
 
                 "world": world["name"],
-                "type": incident_type,
-                "opener": opener,
-                "consequence": consequence,
-                "risk": risk,
-                "status": status,
-                "witness": witness,
 
-                # Card-ready fields.
-                "headline": headline,
-                "summary": (
-                    f"{opener} {consequence}."
+                "type": incident_type,
+
+                "opener": opener,
+
+                "consequence": consequence,
+
+                "risk": rng.choice(
+                    config["risk_levels"]
                 ),
-                "consequence_card": consequence,
-                "witness_card": witness,
+
+                "status": rng.choice(
+                    config["statuses"]
+                ),
+
+                "witness": rng.choice(
+                    config["npc_first"]
+                ),
+
+                "faction": rng.choice(
+                    config["factions"]
+                ),
+
+                "response": rng.choice(
+                    [
+                        "contained",
+                        "investigation opened",
+                        "manual recovery initiated",
+                        "system isolated",
+                        "documentation created",
+                        "temporary workaround deployed",
+                        "unknown",
+                    ]
+                ),
             }
         )
 
-    # ==========================================================
-    # BUILD-TIME QUEST SEEDS
-    # ==========================================================
+    # =========================================================
+    # QUEST SEEDS
+    # =========================================================
 
     for index in range(48):
         world = rng.choice(config["worlds"])
@@ -1533,196 +1617,238 @@ def build_config():
             config["quests"]
         )
 
-        reward = rng.choice(
-            config["quest_rewards"]
-        )
-
-        risk = rng.choice(
-            config["risk_levels"]
-        )
-
-        client = rng.choice(
-            config["factions"]
-        )
-
-        status = rng.choice(
-            config["statuses"]
-        )
-
         config["generated_quest_seeds"].append(
             {
                 "id": f"quest-{index + 1:03d}",
-                "index": index + 1,
 
                 "world": world["name"],
-                "objective": objective,
-                "reward": reward,
-                "risk": risk,
-                "client": client,
-                "status": status,
 
-                # Card-oriented fields.
-                "title": objective.capitalize(),
-                "objective_card": objective,
-                "reward_card": reward,
-                "client_card": client,
+                "objective": objective,
+
+                "reward": rng.choice(
+                    config["quest_rewards"]
+                ),
+
+                "risk": rng.choice(
+                    config["risk_levels"]
+                ),
+
+                "client": rng.choice(
+                    config["factions"]
+                ),
+
+                "status": rng.choice(
+                    config["statuses"]
+                ),
+
+                "party_size": rng.randint(
+                    1,
+                    7,
+                ),
             }
         )
 
-    # ==========================================================
-    # CARD-ORIENTED CONTENT LIMITS
+    # =========================================================
+    # CARD-FIRST CONTENT LIMITS
     #
-    # IMPORTANT:
-    # Old generator used paragraph word-count targets.
-    # That encouraged huge walls of text.
+    # These replace the old artificial word-count system.
     #
-    # These limits describe how much structured content the
-    # browser UI should display at once.
-    # ==========================================================
+    # The frontend should use these values to decide how much
+    # content appears in each card.
+    # =========================================================
 
     config["content_limits"] = {
         "profile_paragraphs": 2,
 
-        "experience_cards": 4,
+        "experience_cards": 7,
         "experience_achievements": 4,
         "experience_technologies": 7,
+        "experience_labels": 5,
 
-        "project_cards": 5,
-        "project_notes": 4,
+        "project_cards": 8,
         "project_technologies": 5,
+        "project_labels": 4,
 
-        "npc_cards": 8,
-        "npc_rumors": 2,
+        "npc_cards": 7,
+
+        "incident_cards": 8,
+
+        "quest_cards": 4,
 
         "world_rule_cards": 4,
         "world_faction_cards": 5,
-        "world_conflict_cards": 3,
 
-        "incident_cards": 8,
-        "quest_cards": 4,
+        "timeline_items": 8,
 
-        "timeline_items": 10,
-
-        "max_text_width_ch": 70,
-        "card_text_width_ch": 62,
-        "hero_text_width_ch": 54,
+        "max_long_text_width_ch": 68,
     }
 
-    # ==========================================================
-    # RENDERING CONTRACT
+    # =========================================================
+    # CARD RENDERING DNA
     #
-    # app.js can use this to decide which data belongs in cards.
-    # This does not dictate a specific UI family.
-    # ==========================================================
+    # Tells the runtime what kind of UI content each section
+    # should prefer.
+    # =========================================================
 
-    config["rendering_contract"] = {
-        "text_heavy_sections_are_cards": True,
-        "long_free_floating_paragraphs": False,
-        "experience_as_cards": True,
-        "projects_as_cards": True,
-        "npcs_as_cards": True,
-        "incidents_as_cards": True,
-        "quests_as_cards": True,
-        "world_lore_as_cards": True,
-        "timeline_as_cards": True,
+    config["content_rendering"] = {
+        "profile": "compact-card",
+        "skills": "tag-cloud",
+        "experience": "dense-card-grid",
+        "projects": "dense-card-grid",
+        "world": "lore-card-grid",
+        "npcs": "character-card-grid",
+        "incidents": "incident-card-grid",
+        "quests": "quest-card-grid",
+        "timeline": "timeline-cards",
+        "archive": "notice-card",
 
-        "allow_asymmetric_layouts": True,
-        "allow_dense_layouts": True,
-        "allow_editorial_layouts": True,
-
-        "mobile_single_column": True,
-        "tablet_adaptive_grid": True,
-        "desktop_multi_column": True,
-        "ultrawide_content_guard": True,
-
-        "avoid_text_wall": True,
-        "avoid_unbounded_paragraph_width": True,
-        "preserve_ui_family_randomization": True,
+        "avoid_text_walls": True,
+        "prefer_cards": True,
+        "prefer_tags": True,
+        "prefer_metadata": True,
+        "prefer_short_labels": True,
+        "allow_long_paragraphs": False,
     }
 
-    # ==========================================================
-    # PORTFOLIO GENERATION DNA
-    # ==========================================================
+    # =========================================================
+    # RANDOM GENERATION DNA
+    # =========================================================
 
     config["generation_rules"] = {
         "portfolio_per_refresh": True,
 
-        # Browser memory only.
         "browser_memory_only": True,
+
         "persistent_storage": False,
 
         "database": False,
+
         "api": False,
+
         "cookies": False,
+
         "local_storage": False,
+
         "session_storage": False,
+
         "indexed_db": False,
 
-        # Fresh runtime content.
         "new_world_per_refresh": True,
+
         "new_npcs_per_refresh": True,
+
         "new_projects_per_refresh": True,
+
         "new_experiences_per_refresh": True,
+
         "new_incidents_per_refresh": True,
+
         "new_quests_per_refresh": True,
 
-        # Fresh UI composition.
         "variable_ui": True,
-        "variable_ui_family": True,
+
         "variable_layout": True,
+
         "variable_navigation": True,
-        "variable_hero_mode": True,
+
         "variable_density": True,
+
         "variable_decoration": True,
 
-        # Fiction.
         "original_fiction": True,
+
         "copyrighted_characters": False,
 
-        # Responsive requirements.
-        "responsive": True,
-        "desktop": True,
-        "tablet": True,
-        "mobile": True,
-        "foldable": True,
-        "ultrawide": True,
+        # Content behavior.
+        "card_first_content": True,
+
+        "text_wall_prevention": True,
+
+        "structured_experience": True,
+
+        "structured_projects": True,
+
+        "unique_npc_names": True,
     }
 
-    # ==========================================================
+    # =========================================================
+    # RUNTIME UI SELECTION DNA
+    #
+    # The UI system remains random.
+    # This is NOT replaced by one fixed design.
+    # =========================================================
+
+    config["ui_generation"] = {
+        "random_family": True,
+        "random_layout": True,
+        "random_navigation": True,
+        "random_density": True,
+        "random_decoration": True,
+        "random_hero_mode": True,
+
+        "family_pool": config["ui_families"],
+        "layout_pool": config["layouts"],
+        "navigation_pool": config["navs"],
+        "density_pool": config["densities"],
+        "decoration_pool": config["decorations"],
+        "hero_pool": config["hero_modes"],
+
+        # Allows the frontend to reject combinations that would
+        # become visually unpleasant.
+        "responsive_required": True,
+
+        "mobile_single_column": True,
+
+        "desktop_card_grid": True,
+
+        "wide_screen_max_content_width": True,
+
+        "text_measure_limit": 68,
+
+        "preserve_random_ui_identity": True,
+    }
+
+    # =========================================================
     # BUILD METADATA
-    # ==========================================================
+    # =========================================================
 
     config["build_meta"] = {
-        "generator": "procedural-absurd-portfolio",
-        "generator_version": "3.0.0",
-        "content_model": "structured-card-first",
-        "storage_model": "browser-memory-only",
-        "runtime_persistence": False,
+        "generator": "absurd-chaos-portfolio",
+
+        "schema": "card-first-3",
+
         "static_output": True,
 
-        "seed_counts": {
-            "worlds": len(config["generated_world_seeds"]),
-            "projects": len(config["generated_project_seeds"]),
-            "experiences": len(config["generated_experience_seeds"]),
-            "npcs": len(config["generated_npc_seeds"]),
-            "incidents": len(config["generated_incident_seeds"]),
-            "quests": len(config["generated_quest_seeds"]),
-        },
+        "runtime_storage": "browser-memory-only",
+
+        "generated_at_build": True,
+
+        "frontend_generates_new_portfolio_on_refresh": True,
+
+        "frontend_generates_new_ui_on_refresh": True,
+
+        "experience_mode": "card-heavy",
+
+        "project_mode": "card-heavy",
+
+        "lore_mode": "compact-cards",
+
+        "npc_mode": "character-cards",
+
+        "incident_mode": "incident-cards",
+
+        "quest_mode": "quest-cards",
     }
 
     return config
 
 
-# ==============================================================
-# BUILD
-# ==============================================================
+# =========================================================
+# BUILD OUTPUT
+# =========================================================
 
 def main():
     config = build_config()
-
-    # ----------------------------------------------------------
-    # Validate required files.
-    # ----------------------------------------------------------
 
     if not TEMPLATE_FILE.exists():
         raise FileNotFoundError(
@@ -1739,10 +1865,6 @@ def main():
             f"Missing JavaScript: {JS_FILE}"
         )
 
-    # ----------------------------------------------------------
-    # Read source files.
-    # ----------------------------------------------------------
-
     template = TEMPLATE_FILE.read_text(
         encoding="utf-8"
     )
@@ -1755,19 +1877,11 @@ def main():
         encoding="utf-8"
     )
 
-    # ----------------------------------------------------------
-    # Serialize configuration.
-    # ----------------------------------------------------------
-
     config_json = json.dumps(
         config,
         ensure_ascii=False,
         separators=(",", ":"),
     )
-
-    # ----------------------------------------------------------
-    # Inject configuration, CSS and JavaScript into template.
-    # ----------------------------------------------------------
 
     html = (
         template
@@ -1785,10 +1899,6 @@ def main():
         )
     )
 
-    # ----------------------------------------------------------
-    # Write static output.
-    # ----------------------------------------------------------
-
     OUTPUT_DIR.mkdir(
         parents=True,
         exist_ok=True,
@@ -1799,26 +1909,38 @@ def main():
         encoding="utf-8",
     )
 
-    # ----------------------------------------------------------
-    # Build information.
-    # ----------------------------------------------------------
-
     print(
         f"Generated: {OUTPUT_FILE}"
     )
 
     print(
-        f"Build identity: {config['build_identity']}"
+        f"Build identity: "
+        f"{config['build_identity']}"
     )
 
     print(
-        f"Generator version: "
-        f"{config['build_meta']['generator_version']}"
+        "Content mode: "
+        "CARD-FIRST"
     )
 
     print(
-        f"Content model: "
-        f"{config['build_meta']['content_model']}"
+        "Experience mode: "
+        "CARD-HEAVY"
+    )
+
+    print(
+        "Project mode: "
+        "CARD-HEAVY"
+    )
+
+    print(
+        "Text-wall prevention: "
+        "ENABLED"
+    )
+
+    print(
+        "Unique NPC names: "
+        "ENABLED"
     )
 
     print(
@@ -1852,12 +1974,8 @@ def main():
     )
 
     print(
-        "Unique NPC names: "
-        f"{len(set(npc['name'] for npc in config['generated_npc_seeds']))}"
-    )
-
-    print(
-        "Browser runtime persistence: DISABLED"
+        "Browser runtime persistence: "
+        "DISABLED"
     )
 
     print(
@@ -1882,14 +2000,6 @@ def main():
 
     print(
         "IndexedDB: DISABLED"
-    )
-
-    print(
-        "Responsive card rendering contract: ENABLED"
-    )
-
-    print(
-        "Random UI family system: PRESERVED"
     )
 
     print(
