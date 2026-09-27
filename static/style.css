@@ -1,12 +1,14 @@
 /* ============================================================
    ABSURD CHAOS PORTFOLIO
-   WATERMELON-INSPIRED UI SYSTEM
+   WATERMELON-INSPIRED RESPONSIVE UI SYSTEM
    ------------------------------------------------------------
-   COMPLETE RESPONSIVE CSS
-   THEME-AWARE TEXT SYSTEM
-   TEXT-HEAVY FICTIONAL WORLD PORTFOLIO
-   NO EXTERNAL UI DEPENDENCY
-   NO FRAMEWORK REQUIRED
+   COMPLETE CSS
+   - Light themes use BLACK/DARK readable text
+   - Dark themes use LIGHT readable text
+   - Text colors automatically match each UI family
+   - Responsive across mobile / tablet / desktop / foldable /
+     ultrawide
+   - No external framework
    ============================================================ */
 
 
@@ -21,6 +23,7 @@
     --surface-3: #1e222a;
 
     --text: #f5f7fa;
+    --text-strong: #ffffff;
     --muted: #969daa;
     --faint: #656b77;
 
@@ -32,6 +35,9 @@
 
     --border: rgba(255, 255, 255, 0.10);
     --border-strong: rgba(255, 255, 255, 0.19);
+
+    --button-text: #07070a;
+    --accent-text: #07070a;
 
     --radius: 18px;
     --radius-small: 12px;
@@ -54,15 +60,6 @@
         clamp(1.65rem, 3.2vw, 3.4rem);
 
     --line-height: 1.55;
-
-    --reading-width: 76ch;
-
-    --long-text-size:
-        clamp(
-            0.96rem,
-            0.24vw + 0.9rem,
-            1.08rem
-        );
 }
 
 
@@ -137,7 +134,7 @@ body {
 
 ::selection {
     background: var(--accent);
-    color: var(--bg);
+    color: var(--accent-text);
 }
 
 button,
@@ -178,79 +175,20 @@ img {
 
 
 /* ============================================================
-   3. GLOBAL THEME-AWARE TEXT
-   ============================================================ */
-
-.app {
-    color: var(--text);
-}
-
-.app *,
-.app *::before,
-.app *::after {
-    border-color: var(--border);
-}
-
-.app h1,
-.app h2,
-.app h3,
-.app h4,
-.app h5,
-.app h6,
-.app p,
-.app span,
-.app strong,
-.app small,
-.app li,
-.app dt,
-.app dd,
-.app blockquote,
-.app label {
-    color: inherit;
-}
-
-.app h1,
-.app h2,
-.app h3,
-.app h4,
-.app h5,
-.app h6 {
-    text-wrap: balance;
-}
-
-.app p {
-    text-wrap: pretty;
-}
-
-.app strong {
-    font-weight: 850;
-}
-
-.app em {
-    color: var(--accent-2);
-}
-
-.app a {
-    color: var(--accent);
-}
-
-.app a:hover {
-    color: var(--accent-2);
-}
-
-
-/* ============================================================
-   4. ACCESSIBILITY
+   3. ACCESSIBILITY
    ============================================================ */
 
 .skip-link {
     position: fixed;
+
     z-index: 9999;
 
     top: 0.75rem;
     left: 0.75rem;
 
-    padding: 0.7rem 1rem;
+    padding:
+        0.7rem
+        1rem;
 
     border:
         1px solid
@@ -276,11 +214,15 @@ img {
 
 
 /* ============================================================
-   5. MAIN APPLICATION SHELL
+   4. APPLICATION SHELL
    ============================================================ */
 
 .app {
-    width: min(100%, var(--content-width));
+    width:
+        min(
+            100%,
+            var(--content-width)
+        );
 
     margin-inline: auto;
 
@@ -289,27 +231,21 @@ img {
             0.75rem,
             env(safe-area-inset-top)
         )
-        max(
-            var(--page-padding),
-            env(safe-area-inset-right)
-        )
+        var(--page-padding)
         max(
             2rem,
             env(safe-area-inset-bottom)
-        )
-        max(
-            var(--page-padding),
-            env(safe-area-inset-left)
         );
 }
 
 
 /* ============================================================
-   6. TOP NAVIGATION
+   5. TOP NAVIGATION
    ============================================================ */
 
 .topbar {
     position: sticky;
+
     z-index: 100;
 
     top:
@@ -321,6 +257,7 @@ img {
     display: flex;
 
     align-items: center;
+
     justify-content: space-between;
 
     gap: 0.8rem;
@@ -348,6 +285,8 @@ img {
             transparent
         );
 
+    color: var(--text);
+
     backdrop-filter:
         blur(22px)
         saturate(140%);
@@ -357,7 +296,8 @@ img {
         saturate(140%);
 
     box-shadow:
-        0 10px 40px rgba(0, 0, 0, 0.12);
+        0 10px 40px
+        rgba(0, 0, 0, 0.12);
 }
 
 
@@ -373,6 +313,8 @@ img {
     align-items: center;
 
     gap: 0.65rem;
+
+    color: var(--text);
 }
 
 .brand-mark {
@@ -398,7 +340,7 @@ img {
             var(--accent-2)
         );
 
-    color: var(--bg);
+    color: var(--accent-text);
 
     font-size: 0.7rem;
 
@@ -465,7 +407,8 @@ img {
         0.72rem;
 
     border:
-        1px solid transparent;
+        1px solid
+        transparent;
 
     border-radius: 10px;
 
@@ -490,9 +433,11 @@ img {
 .action-button:hover {
     color: var(--text);
 
-    border-color: var(--border);
+    border-color:
+        var(--border);
 
-    background: var(--surface-2);
+    background:
+        var(--surface-2);
 }
 
 .nav-link:active,
@@ -501,9 +446,11 @@ img {
 }
 
 .action-button {
-    border-color: var(--border-strong);
+    border-color:
+        var(--border-strong);
 
-    background: var(--surface-2);
+    background:
+        var(--surface-2);
 
     color: var(--text);
 
@@ -512,7 +459,7 @@ img {
 
 
 /* ============================================================
-   7. HERO
+   6. HERO
    ============================================================ */
 
 .hero {
@@ -627,7 +574,7 @@ img {
 
     margin: 0;
 
-    color: var(--text);
+    color: var(--text-strong);
 
     font-size: var(--display-size);
 
@@ -639,7 +586,7 @@ img {
 }
 
 .hero-title {
-    max-width: 70ch;
+    max-width: 72ch;
 
     margin:
         1.5rem
@@ -654,38 +601,6 @@ img {
             1.2vw,
             1.25rem
         );
-
-    line-height: 1.7;
-}
-
-
-/* ============================================================
-   HERO NARRATIVE
-   ============================================================ */
-
-.hero-description {
-    max-width: var(--reading-width);
-
-    margin-top: 1.2rem;
-
-    color: var(--muted);
-
-    font-size:
-        clamp(
-            0.98rem,
-            0.35vw + 0.9rem,
-            1.1rem
-        );
-
-    line-height: 1.75;
-}
-
-.hero-description strong {
-    color: var(--text);
-}
-
-.hero-description .accent {
-    color: var(--accent);
 }
 
 
@@ -736,11 +651,14 @@ img {
 }
 
 .primary-button {
-    border-color: var(--accent);
+    border-color:
+        var(--accent);
 
-    background: var(--accent);
+    background:
+        var(--accent);
 
-    color: var(--bg);
+    color:
+        var(--accent-text);
 
     box-shadow:
         0 10px 30px
@@ -752,19 +670,22 @@ img {
 }
 
 .secondary-button {
-    background: var(--surface);
+    background:
+        var(--surface);
 
-    color: var(--text);
+    color:
+        var(--text);
 }
 
 .primary-button:hover,
 .secondary-button:hover {
-    transform: translateY(-2px);
+    transform:
+        translateY(-2px);
 }
 
 
 /* ============================================================
-   HERO META / MINI DASHBOARD
+   HERO META
    ============================================================ */
 
 .hero-meta {
@@ -786,7 +707,8 @@ img {
         1px solid
         var(--border);
 
-    border-radius: var(--radius-small);
+    border-radius:
+        var(--radius-small);
 
     background:
         linear-gradient(
@@ -799,9 +721,11 @@ img {
             var(--surface-2)
         );
 
-    color: var(--text);
+    color:
+        var(--text);
 
-    box-shadow: var(--shadow);
+    box-shadow:
+        var(--shadow);
 }
 
 .meta-box::after {
@@ -823,6 +747,8 @@ img {
             var(--accent) 12%,
             transparent
         );
+
+    pointer-events: none;
 }
 
 .meta-label {
@@ -849,7 +775,7 @@ img {
 
 
 /* ============================================================
-   8. SECTIONS
+   7. SECTIONS
    ============================================================ */
 
 .section {
@@ -890,7 +816,7 @@ img {
 .section h2 {
     margin: 0;
 
-    color: var(--text);
+    color: var(--text-strong);
 
     font-size: var(--title-size);
 
@@ -910,42 +836,11 @@ img {
         0;
 
     color: var(--muted);
-
-    line-height: 1.75;
 }
 
 
 /* ============================================================
-   LONG FORM SECTION INTRO
-   ============================================================ */
-
-.section-intro {
-    max-width: var(--reading-width);
-
-    margin-bottom: 2rem;
-
-    color: var(--muted);
-
-    font-size: var(--long-text-size);
-
-    line-height: 1.8;
-}
-
-.section-intro strong {
-    color: var(--text);
-}
-
-.section-intro .accent {
-    color: var(--accent);
-}
-
-.section-intro .secondary {
-    color: var(--accent-2);
-}
-
-
-/* ============================================================
-   9. STAT DASHBOARD
+   8. STAT DASHBOARD
    ============================================================ */
 
 .stat-grid {
@@ -969,7 +864,8 @@ img {
         1px solid
         var(--border);
 
-    border-radius: var(--radius-small);
+    border-radius:
+        var(--radius-small);
 
     background:
         color-mix(
@@ -978,13 +874,16 @@ img {
             transparent
         );
 
+    color: var(--text);
+
     transition:
         transform 0.18s ease,
         border-color 0.18s ease;
 }
 
 .stat:hover {
-    transform: translateY(-3px);
+    transform:
+        translateY(-3px);
 
     border-color:
         var(--border-strong);
@@ -993,7 +892,7 @@ img {
 .stat-number {
     display: block;
 
-    color: var(--text);
+    color: var(--text-strong);
 
     font-size:
         clamp(
@@ -1019,13 +918,9 @@ img {
     font-size: 0.72rem;
 }
 
-.stat-accent {
-    color: var(--accent);
-}
-
 
 /* ============================================================
-   10. BENTO CARD SYSTEM
+   9. BENTO CARD SYSTEM
    ============================================================ */
 
 .card-grid {
@@ -1060,7 +955,8 @@ img {
         1px solid
         var(--border);
 
-    border-radius: var(--radius);
+    border-radius:
+        var(--radius);
 
     background:
         linear-gradient(
@@ -1077,7 +973,8 @@ img {
             )
         );
 
-    color: var(--text);
+    color:
+        var(--text);
 
     box-shadow:
         0 14px 50px
@@ -1090,7 +987,8 @@ img {
 }
 
 .card:hover {
-    transform: translateY(-4px);
+    transform:
+        translateY(-4px);
 
     border-color:
         color-mix(
@@ -1134,7 +1032,7 @@ img {
 .card-title {
     margin: 0;
 
-    color: var(--text);
+    color: var(--text-strong);
 
     font-size: 1rem;
 
@@ -1148,12 +1046,6 @@ img {
         0;
 
     color: var(--muted);
-
-    line-height: 1.7;
-}
-
-.card-text strong {
-    color: var(--text);
 }
 
 
@@ -1195,236 +1087,17 @@ img {
             transparent
         );
 
-    color: var(--muted);
+    color:
+        var(--muted);
 
     font-size: 0.68rem;
 
     font-weight: 750;
 }
 
-.tag strong {
-    color: var(--text);
-}
-
 
 /* ============================================================
-   11. TEXT-HEAVY NARRATIVE CARDS
-   ============================================================ */
-
-.text-heavy {
-    color: var(--muted);
-
-    font-size: var(--long-text-size);
-
-    line-height: 1.78;
-}
-
-.text-heavy p {
-    margin:
-        0.7rem
-        0;
-
-    color: var(--muted);
-}
-
-.text-heavy p:first-child {
-    margin-top: 0;
-}
-
-.text-heavy p:last-child {
-    margin-bottom: 0;
-}
-
-.text-heavy strong {
-    color: var(--text);
-}
-
-.text-heavy em {
-    color: var(--accent-2);
-}
-
-.text-heavy .accent {
-    color: var(--accent);
-}
-
-.text-heavy .secondary {
-    color: var(--accent-2);
-}
-
-.text-heavy .warning {
-    color: var(--warning);
-}
-
-.text-heavy .danger {
-    color: var(--danger);
-}
-
-.text-heavy .faint {
-    color: var(--faint);
-}
-
-
-/* ============================================================
-   12. EXPERIENCE ARCHIVE
-   ============================================================ */
-
-.experience-list {
-    display: grid;
-
-    gap: 0.7rem;
-}
-
-.experience-item {
-    display: grid;
-
-    grid-template-columns:
-        minmax(125px, 0.22fr)
-        minmax(0, 1fr)
-        minmax(180px, 0.35fr);
-
-    gap: 1.2rem;
-
-    padding:
-        clamp(
-            1rem,
-            2.5vw,
-            1.5rem
-        );
-
-    border:
-        1px solid
-        var(--border);
-
-    border-radius: var(--radius);
-
-    background:
-        linear-gradient(
-            145deg,
-            var(--surface),
-            var(--surface-2)
-        );
-
-    color: var(--text);
-
-    transition:
-        transform 0.2s ease,
-        border-color 0.2s ease;
-}
-
-.experience-item:hover {
-    transform: translateY(-3px);
-
-    border-color:
-        color-mix(
-            in srgb,
-            var(--accent) 35%,
-            var(--border)
-        );
-}
-
-.experience-period {
-    color: var(--accent);
-
-    font-size: 0.7rem;
-
-    font-weight: 950;
-
-    letter-spacing: 0.08em;
-
-    text-transform: uppercase;
-}
-
-.experience-role {
-    margin: 0;
-
-    color: var(--text);
-
-    font-size:
-        clamp(
-            1.05rem,
-            1.5vw,
-            1.45rem
-        );
-
-    line-height: 1.15;
-}
-
-.experience-organization {
-    margin-top: 0.3rem;
-
-    color: var(--accent-2);
-
-    font-size: 0.78rem;
-
-    font-weight: 750;
-}
-
-.experience-text {
-    margin-top: 0.8rem;
-
-    color: var(--muted);
-
-    font-size: var(--long-text-size);
-
-    line-height: 1.78;
-}
-
-.experience-text strong {
-    color: var(--text);
-}
-
-.experience-detail {
-    padding:
-        0.85rem;
-
-    border:
-        1px solid
-        var(--border);
-
-    border-radius:
-        var(--radius-small);
-
-    background:
-        color-mix(
-            in srgb,
-            var(--surface-3) 55%,
-            transparent
-        );
-
-    color: var(--muted);
-
-    font-size: 0.82rem;
-
-    line-height: 1.65;
-}
-
-.experience-detail + .experience-detail {
-    margin-top: 0.5rem;
-}
-
-.experience-label {
-    display: block;
-
-    margin-bottom: 0.25rem;
-
-    color: var(--faint);
-
-    font-size: 0.62rem;
-
-    font-weight: 900;
-
-    letter-spacing: 0.1em;
-
-    text-transform: uppercase;
-}
-
-.experience-status {
-    color: var(--accent);
-}
-
-
-/* ============================================================
-   13. PROJECT SHOWCASE
+   10. PROJECT SHOWCASE
    ============================================================ */
 
 .projects {
@@ -1458,7 +1131,8 @@ img {
         1px solid
         var(--border);
 
-    border-radius: var(--radius);
+    border-radius:
+        var(--radius);
 
     background:
         linear-gradient(
@@ -1467,7 +1141,8 @@ img {
             var(--surface-2)
         );
 
-    color: var(--text);
+    color:
+        var(--text);
 
     transition:
         transform 0.2s ease,
@@ -1475,7 +1150,8 @@ img {
 }
 
 .project:hover {
-    transform: translateY(-3px);
+    transform:
+        translateY(-3px);
 
     border-color:
         color-mix(
@@ -1507,7 +1183,8 @@ img {
             var(--surface)
         );
 
-    color: var(--accent);
+    color:
+        var(--accent);
 
     font-size: 0.7rem;
 
@@ -1517,19 +1194,10 @@ img {
 .project h3 {
     margin: 0;
 
-    color: var(--text);
+    color:
+        var(--text-strong);
 
     font-size: 1.12rem;
-}
-
-.project-subtitle {
-    margin-top: 0.3rem;
-
-    color: var(--accent-2);
-
-    font-size: 0.8rem;
-
-    font-weight: 750;
 }
 
 .project p {
@@ -1538,84 +1206,8 @@ img {
         0
         0;
 
-    color: var(--muted);
-
-    line-height: 1.72;
-}
-
-.project p strong {
-    color: var(--text);
-}
-
-.project-label {
-    margin-top: 1rem;
-
-    color: var(--faint);
-
-    font-size: 0.62rem;
-
-    font-weight: 950;
-
-    letter-spacing: 0.1em;
-
-    text-transform: uppercase;
-}
-
-.project-copy {
-    color: var(--muted);
-
-    font-size:
-        clamp(
-            0.95rem,
-            0.25vw + 0.9rem,
-            1.05rem
-        );
-
-    line-height: 1.78;
-}
-
-.project-copy strong {
-    color: var(--text);
-}
-
-.project-copy em {
-    color: var(--accent-2);
-}
-
-.project-section {
-    margin-top: 1rem;
-
-    padding-top: 0.9rem;
-
-    border-top:
-        1px solid
-        var(--border);
-}
-
-.project-section-title {
-    margin: 0;
-
-    color: var(--accent);
-
-    font-size: 0.66rem;
-
-    font-weight: 950;
-
-    letter-spacing: 0.1em;
-
-    text-transform: uppercase;
-}
-
-.project-section-text {
-    margin-top: 0.4rem;
-
-    color: var(--muted);
-
-    line-height: 1.75;
-}
-
-.project-section-text strong {
-    color: var(--text);
+    color:
+        var(--muted);
 }
 
 .project-side {
@@ -1641,23 +1233,122 @@ img {
             var(--surface-3) 75%,
             transparent
         );
+
+    color:
+        var(--text);
 }
 
 .project-metric strong {
     display: block;
 
-    color: var(--text);
+    color:
+        var(--text-strong);
 }
 
 .project-metric span {
-    color: var(--faint);
+    color:
+        var(--faint);
 
     font-size: 0.66rem;
 }
 
 
 /* ============================================================
-   14. WORLD / NPC COMMAND CENTER
+   TEXT-HEAVY CONTENT
+   ============================================================ */
+
+.long-copy {
+    max-width: 78ch;
+
+    color: var(--muted);
+
+    line-height: 1.75;
+}
+
+.long-copy p {
+    margin:
+        0 0
+        1rem;
+}
+
+.long-copy p:last-child {
+    margin-bottom: 0;
+}
+
+.story-label {
+    margin-bottom: 0.4rem;
+
+    color: var(--accent);
+
+    font-size: 0.62rem;
+
+    font-weight: 950;
+
+    letter-spacing: 0.12em;
+
+    text-transform: uppercase;
+}
+
+.story-heading {
+    margin: 0;
+
+    color: var(--text-strong);
+
+    font-size: 1.1rem;
+
+    line-height: 1.2;
+}
+
+.story-quote {
+    margin:
+        1rem 0;
+
+    padding:
+        0.9rem 1rem;
+
+    border-left:
+        3px solid
+        var(--accent);
+
+    background:
+        color-mix(
+            in srgb,
+            var(--accent) 5%,
+            var(--surface)
+        );
+
+    color:
+        var(--text);
+
+    font-style: italic;
+}
+
+.story-note {
+    margin-top: 0.75rem;
+
+    padding:
+        0.7rem 0.8rem;
+
+    border:
+        1px dashed
+        var(--border-strong);
+
+    background:
+        color-mix(
+            in srgb,
+            var(--surface-3) 50%,
+            transparent
+        );
+
+    color:
+        var(--muted);
+
+    font-size: 0.78rem;
+}
+
+
+/* ============================================================
+   11. WORLD / NPC COMMAND CENTER
    ============================================================ */
 
 .world-panel {
@@ -1713,7 +1404,8 @@ img {
             var(--surface-2)
         );
 
-    color: var(--text);
+    color:
+        var(--text);
 }
 
 .world-main h3 {
@@ -1721,7 +1413,8 @@ img {
 
     margin: 0;
 
-    color: var(--text);
+    color:
+        var(--text-strong);
 
     font-size:
         clamp(
@@ -1736,101 +1429,22 @@ img {
 }
 
 .world-description {
-    max-width: 70ch;
+    max-width: 75ch;
 
     margin:
         1rem
         0
         0;
 
-    color: var(--muted);
+    color:
+        var(--muted);
 
-    line-height: 1.8;
-}
-
-.world-description strong {
-    color: var(--text);
-}
-
-.world-detail-grid {
-    display: grid;
-
-    grid-template-columns:
-        repeat(
-            2,
-            minmax(0, 1fr)
-        );
-
-    gap: 0.5rem;
-
-    margin-top: 1.25rem;
-}
-
-.world-detail {
-    padding:
-        0.75rem;
-
-    border:
-        1px solid
-        var(--border);
-
-    border-radius:
-        var(--radius-small);
-
-    background:
-        color-mix(
-            in srgb,
-            var(--surface-3) 50%,
-            transparent
-        );
-
-    color: var(--muted);
-
-    font-size: 0.8rem;
-
-    line-height: 1.6;
-}
-
-.world-detail strong {
-    display: block;
-
-    margin-bottom: 0.2rem;
-
-    color: var(--text);
+    line-height: 1.75;
 }
 
 
 /* ============================================================
-   WORLD LORE
-   ============================================================ */
-
-.world-lore {
-    max-width: var(--reading-width);
-
-    margin-top: 1.25rem;
-
-    color: var(--muted);
-
-    font-size: var(--long-text-size);
-
-    line-height: 1.8;
-}
-
-.world-lore p {
-    color: var(--muted);
-}
-
-.world-lore strong {
-    color: var(--text);
-}
-
-.world-lore .highlight {
-    color: var(--accent);
-}
-
-
-/* ============================================================
-   15. NPC LIST
+   NPC LIST
    ============================================================ */
 
 .npc-list {
@@ -1854,26 +1468,14 @@ img {
         1px solid
         var(--border);
 
-    border-radius: var(--radius-small);
+    border-radius:
+        var(--radius-small);
 
-    background: var(--surface);
+    background:
+        var(--surface);
 
-    color: var(--text);
-
-    transition:
-        transform 0.18s ease,
-        border-color 0.18s ease;
-}
-
-.npc:hover {
-    transform: translateY(-2px);
-
-    border-color:
-        color-mix(
-            in srgb,
-            var(--accent) 30%,
-            var(--border)
-        );
+    color:
+        var(--text);
 }
 
 .npc-avatar {
@@ -1894,7 +1496,8 @@ img {
             var(--accent-2)
         );
 
-    color: var(--bg);
+    color:
+        var(--accent-text);
 
     font-size: 0.7rem;
 
@@ -1902,13 +1505,15 @@ img {
 }
 
 .npc-name {
-    color: var(--text);
+    color:
+        var(--text-strong);
 
     font-weight: 850;
 }
 
 .npc-role {
-    color: var(--muted);
+    color:
+        var(--muted);
 
     font-size: 0.76rem;
 }
@@ -1916,450 +1521,19 @@ img {
 .npc-status {
     margin-top: 0.3rem;
 
-    color: var(--accent);
-
-    font-size: 0.61rem;
-
-    font-weight: 900;
-
-    letter-spacing: 0.08em;
-}
-
-
-/* ============================================================
-   EXPANDED NPC DOSSIERS
-   ============================================================ */
-
-.npc-expanded {
-    display: grid;
-
-    grid-template-columns:
-        minmax(0, 0.8fr)
-        minmax(0, 1.2fr);
-
-    gap: 1rem;
-
-    padding:
-        clamp(
-            1rem,
-            2.5vw,
-            1.5rem
-        );
-
-    border:
-        1px solid
-        var(--border);
-
-    border-radius: var(--radius);
-
-    background:
-        linear-gradient(
-            145deg,
-            var(--surface),
-            var(--surface-2)
-        );
-
-    color: var(--text);
-}
-
-.npc-expanded h3 {
-    margin: 0;
-
-    color: var(--text);
-
-    font-size:
-        clamp(
-            1.1rem,
-            2vw,
-            1.5rem
-        );
-}
-
-.npc-story {
-    margin-top: 0.8rem;
-
-    color: var(--muted);
-
-    line-height: 1.75;
-}
-
-.npc-story strong {
-    color: var(--text);
-}
-
-.npc-detail {
-    padding:
-        0.8rem;
-
-    border:
-        1px solid
-        var(--border);
-
-    border-radius:
-        var(--radius-small);
-
-    background:
-        color-mix(
-            in srgb,
-            var(--surface-3) 50%,
-            transparent
-        );
-
-    color: var(--muted);
-
-    font-size: 0.82rem;
-
-    line-height: 1.65;
-}
-
-.npc-detail + .npc-detail {
-    margin-top: 0.5rem;
-}
-
-.npc-detail strong {
-    color: var(--text);
-}
-
-.npc-secret {
-    color: var(--danger);
-}
-
-.npc-rumor {
-    color: var(--accent-2);
-}
-
-.npc-relationship {
-    color: var(--accent);
-}
-
-
-/* ============================================================
-   NPC QUOTE
-   ============================================================ */
-
-.quote,
-.npc-quote,
-.experience-quote,
-.field-note-quote {
-    margin:
-        1rem
-        0;
-
-    padding:
-        0.9rem
-        1rem;
-
-    border-left:
-        3px solid
+    color:
         var(--accent);
 
-    background:
-        color-mix(
-            in srgb,
-            var(--accent) 6%,
-            transparent
-        );
-
-    color: var(--text);
-
-    font-family:
-        Georgia,
-        "Times New Roman",
-        serif;
-
-    font-size:
-        clamp(
-            1rem,
-            1.3vw,
-            1.2rem
-        );
-
-    line-height: 1.65;
-}
-
-.quote cite,
-.npc-quote cite,
-.experience-quote cite,
-.field-note-quote cite {
-    display: block;
-
-    margin-top: 0.45rem;
-
-    color: var(--faint);
-
-    font-family: inherit;
-
-    font-size: 0.7rem;
-
-    font-style: normal;
-}
-
-
-/* ============================================================
-   16. INCIDENT ARCHIVE
-   ============================================================ */
-
-.incident-list {
-    display: grid;
-
-    gap: 0.65rem;
-}
-
-.incident-item {
-    display: grid;
-
-    grid-template-columns:
-        100px
-        minmax(0, 1fr);
-
-    gap: 1rem;
-
-    padding:
-        1rem;
-
-    border:
-        1px solid
-        var(--border);
-
-    border-radius: var(--radius-small);
-
-    background:
-        color-mix(
-            in srgb,
-            var(--surface) 96%,
-            transparent
-        );
-
-    color: var(--text);
-}
-
-.incident-date {
-    color: var(--accent);
-
-    font-size: 0.7rem;
-
-    font-weight: 950;
-
-    letter-spacing: 0.08em;
-
-    text-transform: uppercase;
-}
-
-.incident-title {
-    margin: 0;
-
-    color: var(--text);
-
-    font-size: 1rem;
-}
-
-.incident-text {
-    margin-top: 0.4rem;
-
-    color: var(--muted);
-
-    line-height: 1.75;
-}
-
-.incident-text strong {
-    color: var(--text);
-}
-
-.incident-label {
-    display: block;
-
-    margin-top: 0.75rem;
-
-    color: var(--faint);
-
     font-size: 0.61rem;
 
-    font-weight: 950;
-
-    letter-spacing: 0.1em;
-
-    text-transform: uppercase;
-}
-
-.incident-consequence {
-    margin-top: 0.25rem;
-
-    color: var(--warning);
-}
-
-.incident-failure {
-    color: var(--danger);
-}
-
-.incident-resolution {
-    color: var(--accent);
-}
-
-.incident-status {
-    color: var(--accent);
-}
-
-
-/* ============================================================
-   17. FIELD NOTES
-   ============================================================ */
-
-.field-notes {
-    display: grid;
-
-    grid-template-columns:
-        repeat(
-            2,
-            minmax(0, 1fr)
-        );
-
-    gap: 0.7rem;
-}
-
-.field-note {
-    padding:
-        clamp(
-            1rem,
-            2vw,
-            1.35rem
-        );
-
-    border:
-        1px solid
-        var(--border);
-
-    border-radius: var(--radius);
-
-    background:
-        linear-gradient(
-            145deg,
-            var(--surface),
-            var(--surface-2)
-        );
-
-    color: var(--muted);
-
-    font-size: var(--long-text-size);
-
-    line-height: 1.75;
-}
-
-.field-note strong {
-    color: var(--text);
-}
-
-.field-note-label {
-    display: block;
-
-    margin-bottom: 0.6rem;
-
-    color: var(--accent);
-
-    font-size: 0.63rem;
-
-    font-weight: 950;
-
-    letter-spacing: 0.11em;
-
-    text-transform: uppercase;
-}
-
-.field-note .classified {
-    color: var(--danger);
-}
-
-.field-note .observation {
-    color: var(--accent-2);
-}
-
-
-/* ============================================================
-   18. ARTIFACTS / EVIDENCE
-   ============================================================ */
-
-.artifact-list {
-    display: grid;
-
-    grid-template-columns:
-        repeat(
-            auto-fit,
-            minmax(
-                min(100%, 260px),
-                1fr
-            )
-        );
-
-    gap: 0.7rem;
-}
-
-.artifact {
-    padding:
-        1rem;
-
-    border:
-        1px solid
-        var(--border);
-
-    border-radius: var(--radius-small);
-
-    background: var(--surface);
-
-    color: var(--text);
-}
-
-.artifact-name {
-    color: var(--text);
-
-    font-weight: 850;
-}
-
-.artifact-type {
-    margin-top: 0.25rem;
-
-    color: var(--accent);
-
-    font-size: 0.66rem;
-
     font-weight: 900;
 
     letter-spacing: 0.08em;
-
-    text-transform: uppercase;
-}
-
-.artifact-description {
-    margin-top: 0.6rem;
-
-    color: var(--muted);
-
-    line-height: 1.7;
-}
-
-.artifact-warning {
-    margin-top: 0.65rem;
-
-    color: var(--warning);
-
-    font-size: 0.78rem;
-}
-
-.artifact-status {
-    margin-top: 0.6rem;
-
-    color: var(--accent-2);
-
-    font-size: 0.65rem;
-
-    font-weight: 900;
-
-    letter-spacing: 0.08em;
-
-    text-transform: uppercase;
 }
 
 
 /* ============================================================
-   19. TIMELINE
+   12. TIMELINE
    ============================================================ */
 
 .timeline {
@@ -2383,7 +1557,8 @@ img {
 }
 
 .timeline-year {
-    color: var(--accent);
+    color:
+        var(--accent);
 
     font-size: 0.72rem;
 
@@ -2393,7 +1568,8 @@ img {
 .timeline-title {
     margin: 0;
 
-    color: var(--text);
+    color:
+        var(--text-strong);
 
     font-size: 1rem;
 
@@ -2406,18 +1582,15 @@ img {
         0
         0;
 
-    color: var(--muted);
+    color:
+        var(--muted);
 
-    line-height: 1.75;
-}
-
-.timeline-text strong {
-    color: var(--text);
+    line-height: 1.7;
 }
 
 
 /* ============================================================
-   20. QUEST PANEL
+   13. QUEST PANEL
    ============================================================ */
 
 .quest {
@@ -2441,7 +1614,8 @@ img {
             var(--border)
         );
 
-    border-radius: var(--radius);
+    border-radius:
+        var(--radius);
 
     background:
         linear-gradient(
@@ -2454,13 +1628,15 @@ img {
             var(--surface)
         );
 
-    color: var(--text);
+    color:
+        var(--text);
 }
 
 .quest-label {
     margin-bottom: 0.3rem;
 
-    color: var(--warning);
+    color:
+        var(--warning);
 
     font-size: 0.63rem;
 
@@ -2472,11 +1648,10 @@ img {
 }
 
 .quest-text {
-    color: var(--text);
+    color:
+        var(--text);
 
     font-weight: 750;
-
-    line-height: 1.7;
 }
 
 .quest-reward {
@@ -2492,20 +1667,25 @@ img {
 
     border-radius: 10px;
 
-    text-align: center;
+    background:
+        var(--surface-2);
 
-    color: var(--text);
+    color:
+        var(--text);
+
+    text-align: center;
 }
 
 .quest-reward strong {
     display: block;
 
-    color: var(--accent);
+    color:
+        var(--text-strong);
 }
 
 
 /* ============================================================
-   21. FOOTER
+   14. FOOTER
    ============================================================ */
 
 .footer {
@@ -2521,75 +1701,20 @@ img {
         1px solid
         var(--border);
 
-    color: var(--muted);
+    color:
+        var(--muted);
 
     font-size: 0.78rem;
 }
 
 .footer strong {
-    color: var(--text);
+    color:
+        var(--text);
 }
 
 
 /* ============================================================
-   22. CODE / MARK / PRE
-   ============================================================ */
-
-.app mark {
-    background:
-        color-mix(
-            in srgb,
-            var(--accent) 22%,
-            transparent
-        );
-
-    color: var(--text);
-}
-
-.app code {
-    color: var(--accent-2);
-
-    background:
-        color-mix(
-            in srgb,
-            var(--surface-3) 80%,
-            transparent
-        );
-
-    border-radius: 5px;
-
-    padding:
-        0.1rem
-        0.3rem;
-}
-
-.app pre {
-    overflow-x: auto;
-
-    padding: 1rem;
-
-    color: var(--text);
-
-    background: var(--surface);
-
-    border:
-        1px solid
-        var(--border);
-
-    border-radius: var(--radius-small);
-}
-
-.app hr {
-    border: 0;
-
-    border-top:
-        1px solid
-        var(--border);
-}
-
-
-/* ============================================================
-   23. UI FAMILY — EXECUTIVE
+   15. EXECUTIVE
    ============================================================ */
 
 .ui-executive {
@@ -2604,7 +1729,7 @@ img {
 
 
 /* ============================================================
-   24. UI FAMILY — TERMINAL
+   16. TERMINAL
    ============================================================ */
 
 .ui-terminal {
@@ -2617,6 +1742,16 @@ img {
     --bg: #050807;
     --surface: #08100a;
     --surface-2: #0d1710;
+
+    --text: #eaffed;
+    --text-strong: #ffffff;
+    --muted: #8fbf98;
+    --faint: #5e8065;
+
+    --border: rgba(125, 255, 140, 0.15);
+    --border-strong: rgba(125, 255, 140, 0.30);
+
+    --accent-text: #031006;
 
     font-family:
         "SFMono-Regular",
@@ -2637,7 +1772,7 @@ img {
 
 
 /* ============================================================
-   25. UI FAMILY — RPG
+   17. RPG
    ============================================================ */
 
 .ui-rpg {
@@ -2650,6 +1785,16 @@ img {
     --bg: #0e0b13;
     --surface: #17121f;
     --surface-2: #21192c;
+
+    --text: #f5efff;
+    --text-strong: #ffffff;
+    --muted: #b8adca;
+    --faint: #80738f;
+
+    --border: rgba(255, 255, 255, 0.11);
+    --border-strong: rgba(255, 255, 255, 0.22);
+
+    --accent-text: #160f05;
 }
 
 .ui-rpg .hero h1,
@@ -2661,26 +1806,35 @@ img {
 
 
 /* ============================================================
-   26. UI FAMILY — MANHWA
+   18. MANHWA — LIGHT THEME
    ============================================================ */
 
 .ui-manhwa {
     --radius: 22px;
     --radius-small: 14px;
 
-    --accent: #ff719c;
-    --accent-2: #8a7dff;
+    --accent: #c72561;
+    --accent-2: #5142d6;
 
     --bg: #f4f1ed;
     --surface: #fffdfa;
     --surface-2: #eee9e3;
+    --surface-3: #e4dfd8;
 
-    --text: #18171b;
-    --muted: #65626a;
-    --faint: #8a8790;
+    /*
+       IMPORTANT:
+       Light theme = BLACK/DARK TEXT
+    */
 
-    --border: rgba(24, 23, 27, 0.11);
-    --border-strong: rgba(24, 23, 27, 0.23);
+    --text: #111111;
+    --text-strong: #000000;
+    --muted: #444444;
+    --faint: #686868;
+
+    --border: rgba(0, 0, 0, 0.13);
+    --border-strong: rgba(0, 0, 0, 0.26);
+
+    --accent-text: #ffffff;
 
     --shadow:
         0 24px 70px
@@ -2690,12 +1844,13 @@ img {
 .ui-manhwa .card,
 .ui-manhwa .project,
 .ui-manhwa .meta-box {
-    box-shadow: var(--shadow);
+    box-shadow:
+        var(--shadow);
 }
 
 
 /* ============================================================
-   27. UI FAMILY — DOSSIER
+   19. DOSSIER
    ============================================================ */
 
 .ui-dossier {
@@ -2708,6 +1863,13 @@ img {
     --bg: #11100d;
     --surface: #1a1813;
     --surface-2: #242017;
+
+    --text: #f4eee2;
+    --text-strong: #ffffff;
+    --muted: #b8ae9c;
+    --faint: #7f776a;
+
+    --accent-text: #151007;
 }
 
 .ui-dossier .card,
@@ -2719,7 +1881,7 @@ img {
 
 
 /* ============================================================
-   28. UI FAMILY — RESEARCH
+   20. RESEARCH
    ============================================================ */
 
 .ui-research {
@@ -2732,6 +1894,13 @@ img {
     --bg: #081014;
     --surface: #101b20;
     --surface-2: #15252c;
+
+    --text: #edfaff;
+    --text-strong: #ffffff;
+    --muted: #9eb4bc;
+    --faint: #647980;
+
+    --accent-text: #031014;
 }
 
 .ui-research .hero h1,
@@ -2743,7 +1912,7 @@ img {
 
 
 /* ============================================================
-   29. UI FAMILY — LUXURY
+   21. LUXURY
    ============================================================ */
 
 .ui-luxury {
@@ -2754,8 +1923,15 @@ img {
     --accent-2: #eee2c0;
 
     --bg: #090909;
-    --surface: #111;
+    --surface: #111111;
     --surface-2: #191919;
+
+    --text: #f3f0e8;
+    --text-strong: #ffffff;
+    --muted: #b7b2a7;
+    --faint: #777269;
+
+    --accent-text: #17130a;
 }
 
 .ui-luxury .hero h1,
@@ -2770,26 +1946,35 @@ img {
 
 
 /* ============================================================
-   30. UI FAMILY — BRUTALIST
+   22. BRUTALIST — LIGHT THEME
    ============================================================ */
 
 .ui-brutalist {
     --radius: 0;
     --radius-small: 0;
 
-    --accent: #ffff00;
-    --accent-2: #ff3b30;
+    --accent: #1515d8;
+    --accent-2: #e63227;
 
     --bg: #e8e8e8;
     --surface: #ffffff;
     --surface-2: #d6d6d6;
+    --surface-3: #c8c8c8;
 
-    --text: #050505;
-    --muted: #333333;
-    --faint: #555555;
+    /*
+       IMPORTANT:
+       Pure BLACK text on white background.
+    */
+
+    --text: #000000;
+    --text-strong: #000000;
+    --muted: #202020;
+    --faint: #444444;
 
     --border: #050505;
     --border-strong: #050505;
+
+    --accent-text: #ffffff;
 }
 
 .ui-brutalist .card,
@@ -2797,11 +1982,11 @@ img {
 .ui-brutalist .meta-box {
     border:
         2px solid
-        var(--border);
+        #050505;
 
     box-shadow:
         7px 7px 0
-        var(--text);
+        #050505;
 
     border-radius: 0;
 }
@@ -2814,7 +1999,7 @@ img {
 
 
 /* ============================================================
-   31. UI FAMILY — SPACE
+   23. SPACE
    ============================================================ */
 
 .ui-space {
@@ -2827,6 +2012,13 @@ img {
     --bg: #03050b;
     --surface: #080c16;
     --surface-2: #0e1422;
+
+    --text: #edf7ff;
+    --text-strong: #ffffff;
+    --muted: #a0b6c9;
+    --faint: #64798b;
+
+    --accent-text: #031018;
 }
 
 .ui-space .hero {
@@ -2835,7 +2027,7 @@ img {
 
 
 /* ============================================================
-   32. UI FAMILY — DETECTIVE
+   24. DETECTIVE
    ============================================================ */
 
 .ui-detective {
@@ -2848,6 +2040,13 @@ img {
     --bg: #15120f;
     --surface: #211c16;
     --surface-2: #2a241c;
+
+    --text: #f3ede2;
+    --text-strong: #ffffff;
+    --muted: #b9ad9c;
+    --faint: #7f7569;
+
+    --accent-text: #151007;
 }
 
 .ui-detective .hero h1 {
@@ -2858,7 +2057,7 @@ img {
 
 
 /* ============================================================
-   33. UI FAMILY — SPELLBOOK
+   25. SPELLBOOK
    ============================================================ */
 
 .ui-spellbook {
@@ -2871,6 +2070,13 @@ img {
     --bg: #100b16;
     --surface: #1b1224;
     --surface-2: #261831;
+
+    --text: #f5ebff;
+    --text-strong: #ffffff;
+    --muted: #bcaec7;
+    --faint: #81718d;
+
+    --accent-text: #170b20;
 }
 
 .ui-spellbook .hero h1,
@@ -2882,7 +2088,7 @@ img {
 
 
 /* ============================================================
-   34. UI FAMILY — UNDERGROUND
+   26. UNDERGROUND
    ============================================================ */
 
 .ui-underground {
@@ -2895,6 +2101,13 @@ img {
     --bg: #08090b;
     --surface: #121418;
     --surface-2: #1b1e24;
+
+    --text: #f4f7fa;
+    --text-strong: #ffffff;
+    --muted: #aab0b9;
+    --faint: #707781;
+
+    --accent-text: #16040d;
 }
 
 .ui-underground .hero h1 {
@@ -2905,26 +2118,34 @@ img {
 
 
 /* ============================================================
-   35. UI FAMILY — NEWSPAPER
+   27. NEWSPAPER — LIGHT THEME
    ============================================================ */
 
 .ui-newspaper {
     --radius: 0;
     --radius-small: 0;
 
-    --accent: #171717;
-    --accent-2: #555555;
+    --accent: #111111;
+    --accent-2: #444444;
 
     --bg: #e9e6dc;
     --surface: #f7f4eb;
     --surface-2: #dedacf;
+    --surface-3: #d3cec1;
 
-    --text: #151515;
-    --muted: #4d4b46;
-    --faint: #77736a;
+    /*
+       BLACK TEXT FOR WHITE/PAPER UI
+    */
+
+    --text: #111111;
+    --text-strong: #000000;
+    --muted: #383838;
+    --faint: #5e5b55;
 
     --border: #222222;
     --border-strong: #111111;
+
+    --accent-text: #ffffff;
 }
 
 .ui-newspaper .hero h1,
@@ -2943,7 +2164,7 @@ img {
 
 
 /* ============================================================
-   36. UI FAMILY — OPERATING SYSTEM
+   28. OPERATING SYSTEM
    ============================================================ */
 
 .ui-operating-system {
@@ -2956,6 +2177,13 @@ img {
     --bg: #080b11;
     --surface: #111722;
     --surface-2: #192130;
+
+    --text: #eef5ff;
+    --text-strong: #ffffff;
+    --muted: #a5b3c7;
+    --faint: #68778b;
+
+    --accent-text: #06101f;
 }
 
 .ui-operating-system .topbar {
@@ -2964,7 +2192,7 @@ img {
 
 
 /* ============================================================
-   37. UI FAMILY — CHAOTIC
+   29. CHAOTIC
    ============================================================ */
 
 .ui-chaotic {
@@ -2977,27 +2205,189 @@ img {
     --bg: #0b0810;
     --surface: #17101d;
     --surface-2: #21162b;
+
+    --text: #f8effa;
+    --text-strong: #ffffff;
+    --muted: #c0adca;
+    --faint: #81728a;
+
+    --accent-text: #190514;
 }
 
 .ui-chaotic .card:nth-child(3n) {
-    transform: rotate(0.45deg);
+    transform:
+        rotate(0.45deg);
 }
 
 .ui-chaotic .card:nth-child(4n) {
-    transform: rotate(-0.35deg);
-}
-
-.ui-chaotic .experience-item:nth-child(3n) {
-    transform: rotate(0.25deg);
-}
-
-.ui-chaotic .npc-expanded:nth-child(2n) {
-    transform: rotate(-0.2deg);
+    transform:
+        rotate(-0.35deg);
 }
 
 
 /* ============================================================
-   38. LAYOUT MUTATIONS
+   30. LIGHT THEME SAFETY OVERRIDES
+   ============================================================ */
+
+/*
+   These rules intentionally force readable dark text on all
+   light interfaces, even if generated components introduce
+   generic classes later.
+*/
+
+.ui-manhwa,
+.ui-brutalist,
+.ui-newspaper {
+    color: #000000;
+}
+
+.ui-manhwa *,
+.ui-brutalist *,
+.ui-newspaper * {
+    border-color: var(--border);
+}
+
+.ui-manhwa .hero h1,
+.ui-manhwa .section h2,
+.ui-manhwa .stat-number,
+.ui-manhwa .card-title,
+.ui-manhwa .project h3,
+.ui-manhwa .npc-name,
+.ui-manhwa .timeline-title,
+.ui-manhwa .meta-value,
+.ui-manhwa .story-heading,
+.ui-manhwa .world-main h3,
+.ui-manhwa .quest-reward strong,
+
+.ui-brutalist .hero h1,
+.ui-brutalist .section h2,
+.ui-brutalist .stat-number,
+.ui-brutalist .card-title,
+.ui-brutalist .project h3,
+.ui-brutalist .npc-name,
+.ui-brutalist .timeline-title,
+.ui-brutalist .meta-value,
+.ui-brutalist .story-heading,
+.ui-brutalist .world-main h3,
+.ui-brutalist .quest-reward strong,
+
+.ui-newspaper .hero h1,
+.ui-newspaper .section h2,
+.ui-newspaper .stat-number,
+.ui-newspaper .card-title,
+.ui-newspaper .project h3,
+.ui-newspaper .npc-name,
+.ui-newspaper .timeline-title,
+.ui-newspaper .meta-value,
+.ui-newspaper .story-heading,
+.ui-newspaper .world-main h3,
+.ui-newspaper .quest-reward strong {
+    color: #000000;
+}
+
+.ui-manhwa .hero-title,
+.ui-manhwa .section-description,
+.ui-manhwa .card-text,
+.ui-manhwa .project p,
+.ui-manhwa .world-description,
+.ui-manhwa .timeline-text,
+.ui-manhwa .long-copy,
+.ui-manhwa .npc-role,
+.ui-manhwa .footer,
+
+.ui-brutalist .hero-title,
+.ui-brutalist .section-description,
+.ui-brutalist .card-text,
+.ui-brutalist .project p,
+.ui-brutalist .world-description,
+.ui-brutalist .timeline-text,
+.ui-brutalist .long-copy,
+.ui-brutalist .npc-role,
+.ui-brutalist .footer,
+
+.ui-newspaper .hero-title,
+.ui-newspaper .section-description,
+.ui-newspaper .card-text,
+.ui-newspaper .project p,
+.ui-newspaper .world-description,
+.ui-newspaper .timeline-text,
+.ui-newspaper .long-copy,
+.ui-newspaper .npc-role,
+.ui-newspaper .footer {
+    color: #333333;
+}
+
+.ui-manhwa .meta-label,
+.ui-manhwa .stat-label,
+.ui-manhwa .project-metric span,
+.ui-manhwa .faint,
+
+.ui-brutalist .meta-label,
+.ui-brutalist .stat-label,
+.ui-brutalist .project-metric span,
+.ui-brutalist .faint,
+
+.ui-newspaper .meta-label,
+.ui-newspaper .stat-label,
+.ui-newspaper .project-metric span,
+.ui-newspaper .faint {
+    color: #555555;
+}
+
+.ui-manhwa .nav-link,
+.ui-manhwa .action-button,
+.ui-brutalist .nav-link,
+.ui-brutalist .action-button,
+.ui-newspaper .nav-link,
+.ui-newspaper .action-button {
+    color: #222222;
+}
+
+.ui-manhwa .nav-link:hover,
+.ui-manhwa .action-button:hover,
+.ui-brutalist .nav-link:hover,
+.ui-brutalist .action-button:hover,
+.ui-newspaper .nav-link:hover,
+.ui-newspaper .action-button:hover {
+    color: #000000;
+    background: #dedede;
+}
+
+
+/* ============================================================
+   31. LIGHT THEME BUTTON CONTRAST
+   ============================================================ */
+
+.ui-manhwa .primary-button,
+.ui-brutalist .primary-button,
+.ui-newspaper .primary-button {
+    color: var(--accent-text);
+}
+
+.ui-manhwa .secondary-button,
+.ui-brutalist .secondary-button,
+.ui-newspaper .secondary-button {
+    color: #000000;
+
+    background:
+        var(--surface);
+}
+
+.ui-manhwa .brand-text,
+.ui-brutalist .brand-text,
+.ui-newspaper .brand-text {
+    color: #000000;
+}
+
+.ui-manhwa .brand-mark,
+.ui-brutalist .brand-mark,
+.ui-newspaper .brand-mark {
+    color: var(--accent-text);
+}
+
+
+/* ============================================================
+   32. LAYOUT MUTATIONS
    ============================================================ */
 
 .layout-asymmetric .card-grid > .card:nth-child(1) {
@@ -3030,7 +2420,9 @@ img {
 
 
 .layout-split-screen .hero-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns:
+        1fr
+        1fr;
 }
 
 
@@ -3072,7 +2464,7 @@ img {
 
 
 /* ============================================================
-   39. DENSITY
+   33. DENSITY
    ============================================================ */
 
 .density-compact .section {
@@ -3095,7 +2487,7 @@ img {
 
 
 /* ============================================================
-   40. DECORATIONS
+   34. DECORATIONS
    ============================================================ */
 
 [data-decoration="grid"] {
@@ -3138,7 +2530,9 @@ img {
             transparent 1px
         );
 
-    background-size: 18px 18px;
+    background-size:
+        18px
+        18px;
 }
 
 
@@ -3169,7 +2563,7 @@ img {
 
 
 /* ============================================================
-   41. TABLET
+   35. TABLET
    ============================================================ */
 
 @media (max-width: 1100px) {
@@ -3195,25 +2589,11 @@ img {
     .project-side {
         grid-column: 2;
     }
-
-    .experience-item {
-        grid-template-columns:
-            110px
-            minmax(0, 1fr);
-    }
-
-    .experience-item > :last-child {
-        grid-column: 2;
-    }
-
-    .npc-expanded {
-        grid-template-columns: 1fr;
-    }
 }
 
 
 /* ============================================================
-   42. SMALL TABLET
+   36. SMALL TABLET
    ============================================================ */
 
 @media (max-width: 850px) {
@@ -3252,19 +2632,11 @@ img {
     > .card {
         grid-column: span 6;
     }
-
-    .field-notes {
-        grid-template-columns: 1fr;
-    }
-
-    .world-detail-grid {
-        grid-template-columns: 1fr;
-    }
 }
 
 
 /* ============================================================
-   43. MOBILE
+   37. MOBILE
    ============================================================ */
 
 @media (max-width: 680px) {
@@ -3360,7 +2732,7 @@ img {
 
 
     .project-number {
-        margin-bottom: 0.1rem;
+        margin-bottom: 0.25rem;
     }
 
 
@@ -3369,38 +2741,10 @@ img {
     }
 
 
-    .experience-item {
-        grid-template-columns: 1fr;
-
-        gap: 0.75rem;
-    }
-
-    .experience-item > :last-child {
-        grid-column: auto;
-    }
-
-
     .timeline-item {
         grid-template-columns: 1fr;
 
         gap: 0.25rem;
-    }
-
-
-    .incident-item {
-        grid-template-columns: 1fr;
-
-        gap: 0.35rem;
-    }
-
-
-    .npc-expanded {
-        grid-template-columns: 1fr;
-    }
-
-
-    .field-notes {
-        grid-template-columns: 1fr;
     }
 
 
@@ -3421,7 +2765,7 @@ img {
 
 
 /* ============================================================
-   44. VERY SMALL PHONES
+   38. VERY SMALL PHONES
    ============================================================ */
 
 @media (max-width: 430px) {
@@ -3463,39 +2807,20 @@ img {
     .project,
     .meta-box,
     .world-main,
-    .quest,
-    .experience-item,
-    .npc-expanded {
+    .quest {
         border-radius:
             max(
                 7px,
-                calc(var(--radius) * 0.75)
+                calc(
+                    var(--radius) * 0.75
+                )
             );
-    }
-
-
-    .section {
-        padding-block:
-            clamp(
-                2.5rem,
-                9vw,
-                4rem
-            );
-    }
-
-
-    .project-copy,
-    .experience-text,
-    .text-heavy,
-    .world-lore,
-    .field-note {
-        font-size: 0.94rem;
     }
 }
 
 
 /* ============================================================
-   45. FOLDABLE DEVICES
+   39. FOLDABLE DEVICES
    ============================================================ */
 
 @media (
@@ -3523,7 +2848,7 @@ img {
 
 
 /* ============================================================
-   46. ULTRAWIDE
+   40. ULTRAWIDE
    ============================================================ */
 
 @media (min-width: 1600px) {
@@ -3556,7 +2881,7 @@ img {
 
 
 /* ============================================================
-   47. REDUCED MOTION
+   41. REDUCED MOTION
    ============================================================ */
 
 @media (prefers-reduced-motion: reduce) {
@@ -3579,7 +2904,7 @@ img {
 
 
 /* ============================================================
-   48. PRINT
+   42. PRINT
    ============================================================ */
 
 @media print {
@@ -3624,12 +2949,7 @@ img {
     .project,
     .meta-box,
     .world-main,
-    .quest,
-    .experience-item,
-    .npc-expanded,
-    .incident-item,
-    .field-note,
-    .artifact {
+    .quest {
         box-shadow: none !important;
 
         break-inside: avoid;
@@ -3652,17 +2972,9 @@ img {
     }
 
 
-    .app *,
-    .app h1,
-    .app h2,
-    .app h3,
-    .app h4,
-    .app h5,
-    .app h6,
-    .app p,
-    .app span,
-    .app strong,
-    .app li {
+    * {
         color: #000000 !important;
+
+        border-color: #000000 !important;
     }
 }
