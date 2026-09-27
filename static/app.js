@@ -3,17 +3,19 @@
    ------------------------------------------------------------
    PROCEDURAL FICTIONAL PORTFOLIO RENDERER
 
-   Runtime:
-   - Browser memory only
-   - No localStorage
-   - No sessionStorage
-   - No IndexedDB
-   - No cookies
-   - No backend requests
-   - No database
-   - No API calls
+   Browser memory only.
+   No localStorage.
+   No sessionStorage.
+   No IndexedDB.
+   No cookies.
+   No API.
+   No database.
+   No backend requests.
 
    Every generation can change:
+   - identity
+   - world
+   - faction
    - UI family
    - layout
    - navigation
@@ -21,26 +23,24 @@
    - density
    - decoration
    - palette
-   - identity
-   - world
-   - NPCs
-   - projects
    - experiences
+   - projects
+   - NPCs
    - incidents
    - quests
-   - chronology
+   - timeline
 
-   Content is deliberately card-first.
+   Content is card-first rather than text-wall-first.
    ============================================================ */
 
 (() => {
     "use strict";
 
-    const CONFIG = window.__ABSURD_CONFIG__;
-
     /* ========================================================
-       CONFIGURATION FAILURE
+       CONFIG
        ======================================================== */
+
+    const CONFIG = window.__ABSURD_CONFIG__;
 
     if (!CONFIG || typeof CONFIG !== "object") {
         document.body.innerHTML = `
@@ -48,35 +48,27 @@
                 min-height:100vh;
                 display:grid;
                 place-items:center;
-                padding:2rem;
+                padding:40px;
+                background:#090a0c;
+                color:#f5f7fa;
                 font-family:system-ui,sans-serif;
-                background:#08090b;
-                color:#fff;
             ">
                 <div style="
-                    width:min(100%,42rem);
-                    padding:2rem;
-                    border:1px solid rgba(255,255,255,.14);
-                    background:#111318;
+                    max-width:700px;
+                    padding:32px;
+                    border:1px solid #343944;
                     border-radius:16px;
+                    background:#101216;
                 ">
                     <h1>Configuration Missing</h1>
                     <p>
-                        The fictional archive could not be initialized.
-                    </p>
-                    <p>
-                        Rebuild the generated page with
-                        <code>python3 generator.py</code>.
+                        The procedural portfolio configuration was not loaded.
                     </p>
                 </div>
             </main>
         `;
         return;
     }
-
-    /* ========================================================
-       RUNTIME MEMORY
-       ======================================================== */
 
     const runtime = {
         generatedSignatures: new Set(),
@@ -91,21 +83,17 @@
        DOM HELPERS
        ======================================================== */
 
-    const $ = (
-        selector,
-        root = document
-    ) => root.querySelector(selector);
+    const $ = (selector, root = document) =>
+        root.querySelector(selector);
 
-    const $$ = (
-        selector,
-        root = document
-    ) => [...root.querySelectorAll(selector)];
+    const $$ = (selector, root = document) =>
+        [...root.querySelectorAll(selector)];
 
     /* ========================================================
        RANDOMNESS
        ======================================================== */
 
-    const random = () => {
+    function random() {
         if (
             window.crypto &&
             typeof window.crypto.getRandomValues === "function"
@@ -121,27 +109,21 @@
         }
 
         return Math.random();
-    };
+    }
 
-    const integer = (min, max) => {
+    function integer(min, max) {
         min = Number(min);
         max = Number(max);
 
         if (!Number.isFinite(min)) min = 0;
         if (!Number.isFinite(max)) max = min;
 
-        if (max < min) {
-            [min, max] = [max, min];
-        }
+        return Math.floor(
+            random() * (max - min + 1)
+        ) + min;
+    }
 
-        return (
-            Math.floor(
-                random() * (max - min + 1)
-            ) + min
-        );
-    };
-
-    const pick = array => {
+    function pick(array) {
         if (!Array.isArray(array) || !array.length) {
             return "";
         }
@@ -149,9 +131,9 @@
         return array[
             Math.floor(random() * array.length)
         ];
-    };
+    }
 
-    const sample = (array, count) => {
+    function sample(array, count) {
         if (!Array.isArray(array) || !array.length) {
             return [];
         }
@@ -159,10 +141,12 @@
         const copy = [...array];
         const result = [];
 
-        count = clamp(
-            Number(count) || 0,
+        count = Math.max(
             0,
-            copy.length
+            Math.min(
+                Number(count) || 0,
+                copy.length
+            )
         );
 
         while (
@@ -179,46 +163,56 @@
         }
 
         return result;
-    };
-
-    const clamp = (value, min, max) =>
-        Math.min(
-            Math.max(value, min),
-            max
-        );
-
-    /* ========================================================
-       CONFIG POOL HELPERS
-       ======================================================== */
-
-    function pool(name, fallback = []) {
-        const value = CONFIG[name];
-
-        return Array.isArray(value)
-            ? value
-            : fallback;
     }
 
-    function firstPoolValue(name, fallback = "") {
-        return pick(pool(name)) || fallback;
+    function weightedChoice(weights) {
+        const entries = Object.entries(weights || {});
+
+        if (!entries.length) {
+            return "";
+        }
+
+        const total = entries.reduce(
+            (sum, [, weight]) =>
+                sum + Math.max(0, Number(weight) || 0),
+            0
+        );
+
+        if (total <= 0) {
+            return entries[0][0];
+        }
+
+        let cursor = random() * total;
+
+        for (const [key, weight] of entries) {
+            cursor -= Math.max(
+                0,
+                Number(weight) || 0
+            );
+
+            if (cursor <= 0) {
+                return key;
+            }
+        }
+
+        return entries[entries.length - 1][0];
     }
 
     /* ========================================================
        TEXT HELPERS
        ======================================================== */
 
-    const safe = (
-        value,
-        fallback = "Unknown"
-    ) => {
-        const text = String(value ?? "")
+    function safe(value, fallback = "Unknown") {
+        const text = String(
+            value ?? ""
+        )
             .replace(/\s+/g, " ")
             .trim();
 
         return text || fallback;
-    };
+    }
 
-    const safeArray = value => {
+    function safeArray(value) {
         if (!Array.isArray(value)) {
             return [];
         }
@@ -226,15 +220,24 @@
         return value
             .map(item => safe(item, ""))
             .filter(Boolean);
-    };
+    }
 
-    const slug = value =>
-        String(value ?? "")
+    function uniqueStrings(values) {
+        return [
+            ...new Set(
+                safeArray(values)
+            )
+        ];
+    }
+
+    function slug(value) {
+        return String(value ?? "")
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, "-")
             .replace(/^-+|-+$/g, "");
+    }
 
-    const capitalize = value => {
+    function capitalize(value) {
         const text = safe(value, "");
 
         if (!text) {
@@ -245,105 +248,74 @@
             text.charAt(0).toUpperCase() +
             text.slice(1)
         );
-    };
+    }
 
-    const escapeHTML = value => {
-        const div = document.createElement("div");
+    function escapeHTML(value) {
+        const div =
+            document.createElement("div");
 
-        div.textContent = String(value ?? "");
+        div.textContent =
+            String(value ?? "");
 
         return div.innerHTML;
-    };
+    }
 
-    const initials = name => {
-        const result = String(name ?? "")
-            .split(/\s+/)
-            .filter(Boolean)
-            .map(part => part.charAt(0))
-            .join("")
-            .slice(0, 2)
-            .toUpperCase();
+    function initials(name) {
+        const result =
+            String(name ?? "")
+                .split(/\s+/)
+                .filter(Boolean)
+                .map(
+                    part =>
+                        part.charAt(0)
+                )
+                .join("")
+                .slice(0, 2)
+                .toUpperCase();
 
         return result || "?";
-    };
+    }
 
-    const formatNumber = value => {
-        const number = Number(value);
+    function formatNumber(value) {
+        const number =
+            Number(value);
 
         if (!Number.isFinite(number)) {
             return "0";
         }
 
-        return new Intl.NumberFormat("en-US", {
-            notation:
-                number > 999999
-                    ? "compact"
-                    : "standard",
-            maximumFractionDigits: 1
-        }).format(number);
-    };
+        return new Intl.NumberFormat(
+            "en-US",
+            {
+                notation:
+                    number > 999999
+                        ? "compact"
+                        : "standard",
+                maximumFractionDigits: 1
+            }
+        ).format(number);
+    }
 
     function sentence(parts) {
         return parts
             .filter(Boolean)
-            .map(part =>
-                String(part)
-                    .replace(/\s+/g, " ")
-                    .trim()
-            )
-            .filter(Boolean)
             .join(" ")
+            .replace(/\s+/g, " ")
             .trim();
     }
 
-    function articleFor(value) {
-        const word = safe(value, "unknown");
-
-        return /^[aeiou]/i.test(word)
-            ? "an"
-            : "a";
-    }
-
-    function lowerFirst(value) {
-        const text = safe(value, "");
-
-        if (!text) {
-            return "";
-        }
-
-        return (
-            text.charAt(0).toLowerCase() +
-            text.slice(1)
-        );
-    }
-
-    function cleanPhrase(value) {
-        return safe(value, "")
-            .replace(
-                /\b(a|an)\s+(incident|airship|unusual|unexpected|urgent|emergency)\b/gi,
-                (match, article, word) =>
-                    `${article.toLowerCase() === "a" && /^[aeiou]/i.test(word)
-                        ? "an"
-                        : article
-                    } ${word}`
-            );
-    }
-
-    /* ========================================================
-       HASH / IDS
-       ======================================================== */
-
-    const hashString = value => {
+    function hashString(value) {
         let hash = 2166136261;
 
-        const text = String(value ?? "");
+        const text =
+            String(value ?? "");
 
         for (
-            let i = 0;
-            i < text.length;
-            i++
+            let index = 0;
+            index < text.length;
+            index++
         ) {
-            hash ^= text.charCodeAt(i);
+            hash ^= text.charCodeAt(index);
 
             hash +=
                 (hash << 1) +
@@ -356,123 +328,32 @@
         return Math.abs(
             hash >>> 0
         ).toString(16);
-    };
+    }
 
-    const randomId = () => {
+    function randomId() {
         return [
             Date.now().toString(36),
             integer(100000, 999999).toString(36),
             integer(100000, 999999).toString(36)
         ].join("-");
-    };
-
-    /* ========================================================
-       DATE HELPERS
-       ======================================================== */
+    }
 
     function randomDateLabel(
         minYear = 2012,
-        maxYear = new Date().getFullYear()
+        maxYear = new Date().getFullYear() + 3
     ) {
-        const year = integer(
-            minYear,
-            maxYear
-        );
+        const year =
+            integer(minYear, maxYear);
 
-        const month = String(
-            integer(1, 12)
-        ).padStart(2, "0");
+        const month =
+            String(integer(1, 12))
+                .padStart(2, "0");
 
-        const day = String(
-            integer(1, 28)
-        ).padStart(2, "0");
+        const day =
+            String(integer(1, 28))
+                .padStart(2, "0");
 
         return `${year}-${month}-${day}`;
-    }
-
-    function dateParts(year) {
-        return `${year}-${String(
-            integer(1, 12)
-        ).padStart(2, "0")}-${String(
-            integer(1, 28)
-        ).padStart(2, "0")}`;
-    }
-
-    function orderedArchiveDates(years) {
-        const currentYear =
-            new Date().getFullYear();
-
-        const minimumYear = Math.max(
-            2012,
-            currentYear - Math.max(years, 1)
-        );
-
-        let createdYear = integer(
-            minimumYear,
-            currentYear
-        );
-
-        let updatedYear = integer(
-            createdYear,
-            currentYear
-        );
-
-        let created = dateParts(
-            createdYear
-        );
-
-        let updated = dateParts(
-            updatedYear
-        );
-
-        if (updated < created) {
-            updatedYear = createdYear;
-
-            const createdMonth = integer(
-                1,
-                12
-            );
-
-            const createdDay = integer(
-                1,
-                28
-            );
-
-            const updatedMonth = integer(
-                createdMonth,
-                12
-            );
-
-            const updatedDay =
-                updatedMonth === createdMonth
-                    ? integer(
-                        createdDay,
-                        28
-                    )
-                    : integer(
-                        1,
-                        28
-                    );
-
-            created =
-                `${createdYear}-${String(
-                    createdMonth
-                ).padStart(2, "0")}-${String(
-                    createdDay
-                ).padStart(2, "0")}`;
-
-            updated =
-                `${updatedYear}-${String(
-                    updatedMonth
-                ).padStart(2, "0")}-${String(
-                    updatedDay
-                ).padStart(2, "0")}`;
-        }
-
-        return {
-            created,
-            lastUpdated: updated
-        };
     }
 
     function randomCode() {
@@ -488,87 +369,60 @@
                 "VOID",
                 "ERR",
                 "SEC"
-            ]) || "ARC",
+            ]),
             integer(10, 99),
             "-",
             integer(100, 999)
         ].join("");
     }
 
-    function uniqueStrings(values) {
-        return [
-            ...new Set(
-                safeArray(values)
-            )
-        ];
-    }
-
     /* ========================================================
-       UI CONFIG FALLBACKS
+       CONFIG ACCESS
        ======================================================== */
 
-    const DEFAULT_UI_FAMILIES = [
-        "executive",
-        "terminal",
-        "rpg",
-        "manhwa",
-        "dossier",
-        "research",
-        "luxury",
-        "brutalist",
-        "space",
-        "detective",
-        "spellbook",
-        "underground",
-        "newspaper",
-        "operating-system",
-        "chaotic"
-    ];
+    function pool(name, fallback = []) {
+        const value = CONFIG[name];
 
-    const DEFAULT_LAYOUTS = [
-        "asymmetric",
-        "editorial",
-        "command",
-        "character-sheet",
-        "case-file",
-        "dashboard",
-        "split-screen",
-        "stacked",
-        "magazine",
-        "terminal-grid",
-        "mission-control",
-        "dense-grid"
-    ];
-
-    const DEFAULT_NAVS = [
-        "top",
-        "rail",
-        "floating",
-        "command",
-        "minimal",
-        "drawer"
-    ];
-
-    const DEFAULT_HERO_MODES = [
-        "identity",
-        "mission",
-        "profile",
-        "case",
-        "status",
-        "command",
-        "character",
-        "manifesto",
-        "classified",
-        "field-report"
-    ];
-
-    function uiPool(name, fallback) {
-        const configured = CONFIG[name];
-
-        return Array.isArray(configured) &&
-            configured.length
-            ? configured
+        return Array.isArray(value)
+            ? value
             : fallback;
+    }
+
+    function configPick(
+        name,
+        fallback = ""
+    ) {
+        const values =
+            pool(name);
+
+        return values.length
+            ? pick(values)
+            : fallback;
+    }
+
+    function configSample(
+        name,
+        count,
+        fallback = []
+    ) {
+        const values =
+            pool(name, fallback);
+
+        return sample(
+            values,
+            count
+        );
+    }
+
+    function seedPool(name) {
+        const values =
+            pool(name);
+
+        return values.filter(
+            item =>
+                item &&
+                typeof item === "object"
+        );
     }
 
     /* ========================================================
@@ -576,37 +430,36 @@
        ======================================================== */
 
     function generateWorld() {
-        const seeds = pool(
-            "generated_world_seeds"
-        );
+        const seeds =
+            seedPool(
+                "generated_world_seeds"
+            );
 
         const seed =
-            pick(seeds) || {};
+            seeds.length
+                ? pick(seeds)
+                : {};
 
-        const extraRules = sample(
-            pool("world_rules"),
-            integer(2, 5)
-        );
+        const extraRules =
+            configSample(
+                "world_rules",
+                integer(2, 5),
+                [
+                    "Assume the documentation is incomplete."
+                ]
+            );
 
-        const factionPool =
-            pool("factions");
-
-        const factions = sample(
-            factionPool,
-            integer(
-                3,
-                Math.min(
-                    6,
-                    Math.max(
-                        3,
-                        factionPool.length
-                    )
-                )
-            )
-        );
+        const factions =
+            configSample(
+                "factions",
+                integer(3, 6),
+                [
+                    "Independent Operators"
+                ]
+            );
 
         const conflict =
-            firstPoolValue(
+            configPick(
                 "world_conflicts",
                 "Several organizations are attempting to solve the same problem differently."
             );
@@ -684,22 +537,22 @@
                 97
             ),
 
-            classification: pick([
-                "PUBLIC",
-                "RESTRICTED",
-                "CLASSIFIED",
-                "ARCHIVED",
-                "UNSTABLE",
-                "OBSERVATION ONLY"
-            ]) || "PUBLIC"
+            classification: configPick(
+                "world_classifications",
+                pick([
+                    "PUBLIC",
+                    "RESTRICTED",
+                    "CLASSIFIED",
+                    "ARCHIVED",
+                    "UNSTABLE",
+                    "OBSERVATION ONLY"
+                ])
+            )
         };
 
         if (!world.factions.length) {
             world.factions = [
-                firstPoolValue(
-                    "factions",
-                    "Independent Operators"
-                )
+                "Independent Operators"
             ];
         }
 
@@ -712,69 +565,24 @@
     }
 
     /* ========================================================
-       NPC NAME GENERATION
+       NPC GENERATION
        ======================================================== */
-
-    function generateFallbackNPCName(
-        usedNames
-    ) {
-        const firstNames = pool(
-            "npc_first_names",
-            pool("names")
-        );
-
-        const lastNames = pool(
-            "npc_last_names",
-            pool("names")
-        );
-
-        for (let attempt = 0; attempt < 100; attempt++) {
-            const first =
-                pick(firstNames) ||
-                pick(pool("names")) ||
-                "Unknown";
-
-            const last =
-                pick(lastNames) ||
-                pick(pool("names")) ||
-                "Contact";
-
-            const name =
-                `${safe(first)} ${safe(last)}`;
-
-            if (!usedNames.has(name)) {
-                return name;
-            }
-        }
-
-        let index = usedNames.size + 1;
-
-        let name =
-            `Unknown Contact ${index}`;
-
-        while (usedNames.has(name)) {
-            index += 1;
-            name =
-                `Unknown Contact ${index}`;
-        }
-
-        return name;
-    }
 
     function generateNPC(
         world,
         faction,
         usedNames
     ) {
-        const seeds = pool(
-            "generated_npc_seeds"
-        );
+        const seeds =
+            seedPool(
+                "generated_npc_seeds"
+            );
 
-        const unusedSeeds = seeds.filter(
-            seed => {
+        const availableSeeds =
+            seeds.filter(seed => {
                 const name =
                     safe(
-                        seed?.name,
+                        seed.name,
                         ""
                     );
 
@@ -782,81 +590,82 @@
                     name &&
                     !usedNames.has(name)
                 );
-            }
-        );
+            });
 
-        const seed =
-            pick(unusedSeeds) ||
-            {};
+        let seed =
+            availableSeeds.length
+                ? pick(availableSeeds)
+                : {};
 
-        let name = safe(
-            seed.name,
-            ""
-        );
+        let name =
+            safe(
+                seed.name ||
+                `${seed.first || ""} ${seed.last || ""}`,
+                ""
+            );
 
-        if (!name) {
-            name =
-                generateFallbackNPCName(
-                    usedNames
+        if (
+            !name ||
+            usedNames.has(name)
+        ) {
+            const firstNames =
+                pool(
+                    "npc_first_names",
+                    ["Kael"]
                 );
-        }
 
-        if (usedNames.has(name)) {
-            name =
-                generateFallbackNPCName(
-                    usedNames
+            const lastNames =
+                pool(
+                    "npc_last_names",
+                    ["Vey"]
                 );
+
+            let attempts = 0;
+
+            do {
+                name =
+                    `${pick(firstNames)} ${pick(lastNames)}`;
+
+                attempts++;
+
+                if (attempts > 100) {
+                    name =
+                        `${name} ${integer(100, 999)}`;
+                    break;
+                }
+            } while (
+                usedNames.has(name)
+            );
         }
 
         usedNames.add(name);
 
-        const role = safe(
-            seed.role,
-            firstPoolValue(
-                "npc_roles",
-                "unregistered specialist"
-            )
-        );
+        const dialogue =
+            safe(
+                seed.dialogue,
+                configPick(
+                    "npc_dialogue",
+                    "You keep calling it a bug. I call it evidence."
+                )
+            );
 
-        const type = safe(
-            seed.type,
-            firstPoolValue(
-                "npc_types",
-                "unknown entity"
-            )
-        );
+        const secret =
+            safe(
+                seed.secret,
+                configPick(
+                    "npc_secrets",
+                    "Knows something nobody has successfully documented."
+                )
+            );
 
-        const trait = safe(
-            seed.trait,
-            firstPoolValue(
-                "npc_traits",
-                "suspiciously competent"
-            )
-        );
-
-        const relationship = safe(
-            seed.relationship,
-            firstPoolValue(
-                "npc_relationships",
-                "professional contact"
-            )
-        );
-
-        const secret = safe(
-            seed.secret,
-            firstPoolValue(
-                "npc_secrets",
-                "Knows something nobody has successfully documented."
-            )
-        );
-
-        const dialogue = safe(
-            seed.dialogue,
-            firstPoolValue(
-                "npc_dialogue",
-                "You keep calling it a bug. I call it evidence."
-            )
-        );
+        const relationship =
+            safe(
+                seed.relationship,
+                configPick(
+                    "npc_relationships",
+                    "professional contact"
+                )
+            );
 
         const npc = {
             id: randomId(),
@@ -873,11 +682,29 @@
                 name.split(" ").slice(1).join(" ")
             ),
 
-            role,
+            role: safe(
+                seed.role,
+                configPick(
+                    "npc_roles",
+                    "unregistered specialist"
+                )
+            ),
 
-            type,
+            type: safe(
+                seed.type,
+                configPick(
+                    "npc_types",
+                    "unknown entity"
+                )
+            ),
 
-            trait,
+            trait: safe(
+                seed.trait,
+                configPick(
+                    "npc_traits",
+                    "suspiciously competent"
+                )
+            ),
 
             relationship,
 
@@ -887,7 +714,7 @@
 
             status: safe(
                 seed.status,
-                firstPoolValue(
+                configPick(
                     "statuses",
                     "UNKNOWN"
                 )
@@ -901,10 +728,11 @@
             world: world.name,
 
             location: safe(
-                pick(
-                    pool("locations")
-                ),
-                world.name
+                seed.location,
+                configPick(
+                    "locations",
+                    world.name
+                )
             ),
 
             reputation: integer(
@@ -914,7 +742,7 @@
 
             danger: safe(
                 seed.risk,
-                firstPoolValue(
+                configPick(
                     "risk_levels",
                     "UNDEFINED"
                 )
@@ -933,15 +761,12 @@
             biography:
                 buildNPCBiography(
                     seed,
-                    world,
-                    role,
-                    type,
-                    trait,
-                    secret
+                    world
                 ),
 
             rumors:
                 buildNPCRumors(
+                    seed,
                     world
                 )
         };
@@ -956,19 +781,46 @@
 
     function buildNPCBiography(
         seed,
-        world,
-        role,
-        type,
-        trait,
-        secret
+        world
     ) {
-        const first = safe(
-            seed.first,
-            "Unknown"
-        );
+        const first =
+            safe(
+                seed.first,
+                "Unknown"
+            );
+
+        const role =
+            safe(
+                seed.role,
+                "unregistered specialist"
+            );
+
+        const type =
+            safe(
+                seed.type,
+                "unknown entity"
+            );
+
+        const trait =
+            safe(
+                seed.trait,
+                configPick(
+                    "npc_traits",
+                    "quietly suspicious"
+                )
+            );
+
+        const secret =
+            safe(
+                seed.secret,
+                configPick(
+                    "npc_secrets",
+                    "knows more than the official record suggests"
+                )
+            );
 
         return sentence([
-            `${first} is ${articleFor(type)} ${type} known in ${world.name} as a ${role}.`,
+            `${first} is a ${type} known in ${world.name} as a ${role}.`,
             `Most records describe them as ${trait}.`,
             "Their involvement with the portfolio owner began after a routine professional interaction became considerably less routine.",
             `${capitalize(secret)}.`,
@@ -976,7 +828,10 @@
         ]);
     }
 
-    function buildNPCRumors(world) {
+    function buildNPCRumors(
+        seed,
+        world
+    ) {
         const rumors = [
             `Claims to have worked inside ${world.name} before it had its current name.`,
             "Was allegedly present during an incident that officially never happened.",
@@ -1005,87 +860,98 @@
         faction,
         specialties
     ) {
+        const seeds =
+            seedPool(
+                "generated_experience_seeds"
+            );
+
         const seed =
-            pick(
-                pool(
-                    "generated_experience_seeds"
+            seeds.length
+                ? pick(seeds)
+                : {};
+
+        const role =
+            safe(
+                seed.role,
+                configPick(
+                    "experience_roles",
+                    "Systems Engineer"
                 )
-            ) || {};
+            );
 
-        const role = safe(
-            seed.role,
-            firstPoolValue(
-                "experience_roles",
-                "Systems Engineer"
-            )
-        );
+        const opening =
+            safe(
+                seed.opening,
+                configPick(
+                    "experience_openings",
+                    "The assignment looked ordinary from a distance."
+                )
+            );
 
-        const opening = safe(
-            seed.opening,
-            firstPoolValue(
-                "experience_openings",
-                "The assignment looked ordinary from a distance."
-            )
-        );
+        const hook =
+            safe(
+                seed.hook,
+                configPick(
+                    "story_hooks",
+                    "The first investigation revealed that the original assumptions were incomplete."
+                )
+            );
 
-        const hook = safe(
-            seed.hook,
-            firstPoolValue(
-                "story_hooks",
-                "The first investigation revealed that the original assumptions were incomplete."
-            )
-        );
-
-        const incident = cleanPhrase(
+        const incident =
             safe(
                 seed.incident,
-                firstPoolValue(
+                configPick(
                     "experience_incidents",
-                    "an unexpected system state appeared during routine operation"
+                    "a routine operation produced an unexpected system state"
                 )
-            )
-        );
+            );
 
-        const turn = safe(
-            seed.turn,
-            firstPoolValue(
-                "story_turns",
-                "The investigation moved from symptoms toward system history."
-            )
-        );
+        const turn =
+            safe(
+                seed.turn,
+                configPick(
+                    "story_turns",
+                    "The investigation moved from symptoms toward system history."
+                )
+            );
 
-        const lesson = safe(
-            seed.lesson,
-            firstPoolValue(
-                "experience_lessons",
-                "Reliable systems require clear assumptions, observable behavior and recovery paths."
-            )
-        );
+        const lesson =
+            safe(
+                seed.lesson,
+                configPick(
+                    "experience_lessons",
+                    "Reliable systems require clear assumptions, observable behavior and recovery paths."
+                )
+            );
 
-        const closing = safe(
-            seed.closing,
-            firstPoolValue(
-                "closing_lines",
-                "The system eventually became boring enough to trust."
-            )
-        );
+        const closing =
+            safe(
+                seed.closing,
+                configPick(
+                    "closing_lines",
+                    "The system eventually became boring enough to trust."
+                )
+            );
 
-        const technologyPool =
-            specialties.length
-                ? specialties
-                : pool(
-                    "specialties",
-                    ["systems engineering"]
-                );
+        const techCount =
+            Math.min(
+                specialties.length,
+                integer(
+                    3,
+                    Math.min(
+                        7,
+                        Math.max(
+                            3,
+                            specialties.length
+                        )
+                    )
+                )
+            );
 
         const technologies =
             sample(
-                technologyPool,
-                clamp(
-                    integer(4, 7),
-                    1,
-                    technologyPool.length
-                )
+                specialties,
+                techCount
             );
 
         return {
@@ -1109,7 +975,7 @@
 
             status: safe(
                 seed.status,
-                firstPoolValue(
+                configPick(
                     "statuses",
                     "ACTIVE"
                 )
@@ -1118,15 +984,10 @@
             technologies,
 
             opening,
-
             hook,
-
             incident,
-
             turn,
-
             lesson,
-
             closing,
 
             narrative:
@@ -1150,9 +1011,12 @@
                 ),
 
             incidents:
-                sample(
-                    pool("incident_types"),
-                    integer(2, 4)
+                configSample(
+                    "incident_types",
+                    integer(2, 4),
+                    [
+                        "unexpected production event"
+                    ]
                 )
         };
     }
@@ -1187,7 +1051,7 @@
             ]),
 
             incident: sentence([
-                `During the assignment, ${lowerFirst(incident)}.`,
+                incident,
                 "Nobody could initially agree whether the problem was technical, operational or administrative."
             ]),
 
@@ -1237,15 +1101,17 @@
         world,
         industry,
         specialties,
-        npcs,
-        projectNumber
+        npcs
     ) {
+        const seeds =
+            seedPool(
+                "generated_project_seeds"
+            );
+
         const seed =
-            pick(
-                pool(
-                    "generated_project_seeds"
-                )
-            ) || {};
+            seeds.length
+                ? pick(seeds)
+                : {};
 
         const suffix =
             pick([
@@ -1263,7 +1129,7 @@
                 "Network",
                 "Matrix",
                 "System"
-            ]) || "System";
+            ]);
 
         const baseName =
             safe(
@@ -1276,63 +1142,47 @@
 
         const skills =
             sample(
-                specialties.length
-                    ? specialties
-                    : pool(
-                        "specialties",
-                        ["engineering"]
-                    ),
-                clamp(
-                    integer(3, 7),
-                    1,
-                    Math.max(
-                        1,
-                        specialties.length
-                    )
+                specialties,
+                Math.min(
+                    specialties.length,
+                    integer(3, 6)
                 )
             );
 
         const problem =
-            cleanPhrase(
-                safe(
-                    seed.problem,
-                    firstPoolValue(
-                        "project_problems",
-                        "the existing system had accumulated too many undocumented assumptions"
-                    )
+            safe(
+                seed.problem,
+                configPick(
+                    "project_problems",
+                    "the existing system had accumulated too many undocumented assumptions"
                 )
             );
 
         const solution =
-            cleanPhrase(
-                safe(
-                    seed.solution,
-                    firstPoolValue(
-                        "project_solutions",
-                        "introduce explicit boundaries, observability and automated recovery"
-                    )
+            safe(
+                seed.solution,
+                configPick(
+                    "project_solutions",
+                    "introduce explicit boundaries, observability and automated recovery"
                 )
             );
 
         const failure =
-            cleanPhrase(
-                safe(
-                    seed.failure,
-                    firstPoolValue(
-                        "project_failures",
-                        "a routine deployment exposed a previously unknown dependency"
-                    )
+            safe(
+                seed.failure,
+                configPick(
+                    "project_failures",
+                    "a routine deployment exposed a previously unknown dependency"
                 )
             );
 
         const outcome =
-            cleanPhrase(
-                safe(
-                    seed.outcome,
-                    firstPoolValue(
-                        "project_outcomes",
-                        "the system became stable enough for ordinary disasters"
-                    )
+            safe(
+                seed.outcome,
+                configPick(
+                    "project_outcomes",
+                    "the system became stable enough for ordinary disasters"
+                )
             );
 
         const client =
@@ -1340,19 +1190,17 @@
                 ? pick(npcs)
                 : null;
 
-        const type = safe(
-            seed.type,
-            firstPoolValue(
-                "project_types",
-                "infrastructure project"
-            )
-        );
+        const type =
+            safe(
+                seed.type,
+                configPick(
+                    "project_types",
+                    "infrastructure project"
+                )
+            );
 
-        const project = {
+        return {
             id: randomId(),
-
-            number:
-                projectNumber,
 
             name,
 
@@ -1370,40 +1218,40 @@
 
             skills,
 
-            client:
-                client
-                    ? client.name
-                    : "Unknown client",
+            client: client
+                ? client.name
+                : "Unknown client",
 
             problem,
-
             solution,
-
             failure,
-
             outcome,
 
-            status:
-                pick([
-                    "Production",
-                    "Maintained",
-                    "Scaling",
-                    "Research",
-                    "Archived",
-                    "Classified",
-                    "Operational",
-                    "Partially Operational"
-                ]) ||
+            status: pick([
+                "Production",
+                "Maintained",
+                "Scaling",
+                "Research",
+                "Archived",
+                "Classified",
                 "Operational",
+                "Partially Operational"
+            ]),
 
-            complexity:
-                integer(21, 99),
+            complexity: integer(
+                21,
+                99
+            ),
 
-            users:
-                integer(100, 850000),
+            users: integer(
+                100,
+                850000
+            ),
 
-            duration:
-                integer(2, 48),
+            duration: integer(
+                2,
+                48
+            ),
 
             narrative:
                 buildProjectNarrative({
@@ -1425,8 +1273,6 @@
                     type
                 )
         };
-
-        return project;
     }
 
     function buildProjectNarrative({
@@ -1449,20 +1295,25 @@
                 )
                 : "an unnamed client";
 
+        const skillText =
+            skills.length
+                ? skills.join(", ")
+                : "systems engineering";
+
         return {
             summary: sentence([
-                `PROJECT ${name} was commissioned as ${articleFor(type)} ${type} for ${industry}.`,
+                `PROJECT ${name} was commissioned as a ${type} for ${industry}.`,
                 `It eventually became useful infrastructure inside ${world.name}.`
             ]),
 
             problem: sentence([
                 "The initial requirement sounded simple.",
-                `The project existed because ${lowerFirst(problem)}.`
+                `The project existed because ${problem}.`
             ]),
 
             architecture: sentence([
                 "The architecture favored clear interfaces, observable state, recoverable failures and explicit ownership.",
-                `The implementation centered around ${skills.join(", ")}.`
+                `The implementation centered around ${skillText}.`
             ]),
 
             client: sentence([
@@ -1471,16 +1322,16 @@
             ]),
 
             failure: sentence([
-                `That hidden requirement surfaced when ${lowerFirst(failure)}.`
+                `That hidden requirement surfaced when ${failure}.`
             ]),
 
             solution: sentence([
-                `The response was to ${lowerFirst(solution)}.`,
+                `The response was to ${solution}.`,
                 "This reduced unknown failure modes and made the system easier to reason about."
             ]),
 
             outcome: sentence([
-                `The project eventually reached a state where ${lowerFirst(outcome)}.`,
+                `The project eventually reached a state where ${outcome}.`,
                 "The final lesson was that good infrastructure does not prevent strange events; it makes them easier to survive."
             ])
         };
@@ -1490,9 +1341,14 @@
         skills,
         type
     ) {
+        const skillText =
+            skills.length
+                ? skills.slice(0, 3).join(", ")
+                : "systems engineering";
+
         const notes = [
             `Architecture: modular ${type}`,
-            `Primary stack: ${skills.slice(0, 3).join(", ")}`,
+            `Primary stack: ${skillText}`,
             "Failure strategy: observable, recoverable, documented",
             "Deployment model: automated where practical",
             "Operational philosophy: boring infrastructure, interesting outcomes",
@@ -1514,12 +1370,15 @@
         npcs,
         projects
     ) {
+        const seeds =
+            seedPool(
+                "generated_incident_seeds"
+            );
+
         const seed =
-            pick(
-                pool(
-                    "generated_incident_seeds"
-                )
-            ) || {};
+            seeds.length
+                ? pick(seeds)
+                : {};
 
         const witness =
             npcs.length
@@ -1531,30 +1390,12 @@
                 ? pick(projects)
                 : null;
 
-        const type = safe(
-            seed.type,
-            firstPoolValue(
-                "incident_types",
-                "unknown production event"
-            )
-        );
-
-        const opener = safe(
-            seed.opener,
-            firstPoolValue(
-                "incident_openers",
-                "Without warning"
-            )
-        );
-
-        const consequence =
-            cleanPhrase(
-                safe(
-                    seed.consequence,
-                    firstPoolValue(
-                        "incident_consequences",
-                        "the system entered an unexpected state"
-                    )
+        const type =
+            safe(
+                seed.type,
+                configPick(
+                    "incident_types",
+                    "unknown production event"
                 )
             );
 
@@ -1570,13 +1411,25 @@
 
             type,
 
-            opener,
+            opener: safe(
+                seed.opener,
+                configPick(
+                    "incident_openers",
+                    "Without warning"
+                )
+            ),
 
-            consequence,
+            consequence: safe(
+                seed.consequence,
+                configPick(
+                    "incident_consequences",
+                    "the system entered an unexpected state"
+                )
+            ),
 
             risk: safe(
                 seed.risk,
-                firstPoolValue(
+                configPick(
                     "risk_levels",
                     "UNDEFINED"
                 )
@@ -1584,30 +1437,30 @@
 
             status: safe(
                 seed.status,
-                firstPoolValue(
+                configPick(
                     "statuses",
                     "UNDER INVESTIGATION"
                 )
             ),
 
-            witness:
-                witness
-                    ? witness.name
-                    : "Unknown",
+            witness: witness
+                ? witness.name
+                : "Unknown",
 
-            project:
-                project
-                    ? project.name
-                    : "Unassigned",
+            project: project
+                ? project.name
+                : "Unassigned",
 
-            date: randomDateLabel(),
+            date:
+                safe(
+                    seed.date,
+                    randomDateLabel()
+                ),
 
             narrative:
                 buildIncidentNarrative({
                     world,
-                    type,
-                    opener,
-                    consequence,
+                    seed,
                     witness,
                     project
                 })
@@ -1618,12 +1471,28 @@
 
     function buildIncidentNarrative({
         world,
-        type,
-        opener,
-        consequence,
+        seed,
         witness,
         project
     }) {
+        const type =
+            safe(
+                seed.type,
+                "unknown production event"
+            );
+
+        const opener =
+            safe(
+                seed.opener,
+                "Without warning"
+            );
+
+        const consequence =
+            safe(
+                seed.consequence,
+                "the environment entered an unexpected state"
+            );
+
         const witnessText =
             witness
                 ? `${witness.name}, a ${witness.role},`
@@ -1647,7 +1516,7 @@
             ]),
 
             consequence: sentence([
-                `The immediate consequence was that ${lowerFirst(consequence)}.`
+                `The immediate consequence was that ${consequence}.`
             ]),
 
             response:
@@ -1667,41 +1536,47 @@
         npcs,
         faction
     ) {
+        const seeds =
+            seedPool(
+                "generated_quest_seeds"
+            );
+
         const seed =
-            pick(
-                pool(
-                    "generated_quest_seeds"
-                )
-            ) || {};
+            seeds.length
+                ? pick(seeds)
+                : {};
 
         const client =
             npcs.length
                 ? pick(npcs)
                 : null;
 
-        const objective = safe(
-            seed.objective,
-            firstPoolValue(
-                "quests",
-                "Investigate an unresolved infrastructure problem"
-            )
-        );
+        const objective =
+            safe(
+                seed.objective,
+                configPick(
+                    "quests",
+                    "Investigate an unresolved infrastructure problem"
+                )
+            );
 
-        const reward = safe(
-            seed.reward,
-            firstPoolValue(
-                "quest_rewards",
-                "Archive favor"
-            )
-        );
+        const reward =
+            safe(
+                seed.reward,
+                configPick(
+                    "quest_rewards",
+                    "Archive favor"
+                )
+            );
 
-        const risk = safe(
-            seed.risk,
-            firstPoolValue(
-                "risk_levels",
-                "ELEVATED"
-            )
-        );
+        const risk =
+            safe(
+                seed.risk,
+                configPick(
+                    "risk_levels",
+                    "ELEVATED"
+                )
+            );
 
         const assignedBy =
             client
@@ -1729,7 +1604,7 @@
 
             status: safe(
                 seed.status,
-                firstPoolValue(
+                configPick(
                     "statuses",
                     "ACTIVE"
                 )
@@ -1776,22 +1651,21 @@
             new Date().getFullYear();
 
         const startYear =
-            currentYear -
             Math.max(
-                years,
-                1
+                2012,
+                currentYear - years
             );
 
         const events = [];
 
-        const count = clamp(
+        const count =
             Math.max(
                 6,
-                experiences.length + 3
-            ),
-            6,
-            11
-        );
+                Math.min(
+                    11,
+                    experiences.length + 3
+                )
+            );
 
         const titles = [
             "Entered the field",
@@ -1808,12 +1682,12 @@
         ];
 
         for (
-            let i = 0;
-            i < count;
-            i++
+            let index = 0;
+            index < count;
+            index++
         ) {
             const progress =
-                i /
+                index /
                 Math.max(
                     count - 1,
                     1
@@ -1823,25 +1697,22 @@
                 Math.round(
                     startYear +
                     progress *
-                    (
-                        currentYear -
-                        startYear
-                    )
+                        (currentYear - startYear)
                 );
 
             let title =
-                titles[i] ||
+                titles[index] ||
                 "Continued operation";
 
             let text =
                 "Built, maintained, documented and occasionally questioned the decision to deploy this on Friday.";
 
             if (
-                i <
+                index <
                 experiences.length
             ) {
                 const experience =
-                    experiences[i];
+                    experiences[index];
 
                 title =
                     safe(
@@ -1857,7 +1728,7 @@
             }
 
             if (
-                i ===
+                index ===
                 count - 1
             ) {
                 title =
@@ -1881,6 +1752,130 @@
     }
 
     /* ========================================================
+       PALETTES
+       --------------------------------------------------------
+       IMPORTANT:
+       This is deliberately explicit.
+       No placeholder syntax.
+       ======================================================== */
+
+    function choosePalette(
+        family
+    ) {
+        const palettes = {
+            executive: {
+                accent: "#8b7cff",
+                accent2: "#58e0bd",
+                background: "#090a0c",
+                surface: "#101216"
+            },
+
+            terminal: {
+                accent: "#73ff8f",
+                accent2: "#4fdcff",
+                background: "#050806",
+                surface: "#0b120d"
+            },
+
+            rpg: {
+                accent: "#d69bff",
+                accent2: "#ffd166",
+                background: "#0d0914",
+                surface: "#15101d"
+            },
+
+            manhwa: {
+                accent: "#ff5e7a",
+                accent2: "#63d8ff",
+                background: "#0e0a10",
+                surface: "#171019"
+            },
+
+            dossier: {
+                accent: "#d8b36a",
+                accent2: "#82a7a0",
+                background: "#0d0d0b",
+                surface: "#161613"
+            },
+
+            research: {
+                accent: "#64a9ff",
+                accent2: "#67e0ca",
+                background: "#080c12",
+                surface: "#101721"
+            },
+
+            luxury: {
+                accent: "#d7b36a",
+                accent2: "#efe0b0",
+                background: "#0a0908",
+                surface: "#151310"
+            },
+
+            brutalist: {
+                accent: "#ff5b45",
+                accent2: "#ffe14d",
+                background: "#f2efe8",
+                surface: "#ffffff"
+            },
+
+            space: {
+                accent: "#8b8dff",
+                accent2: "#59e4ff",
+                background: "#050712",
+                surface: "#0c1020"
+            },
+
+            detective: {
+                accent: "#c9a35b",
+                accent2: "#7ba7a1",
+                background: "#0b0b0a",
+                surface: "#151412"
+            },
+
+            spellbook: {
+                accent: "#b78cff",
+                accent2: "#6ee7c8",
+                background: "#0d0912",
+                surface: "#17101d"
+            },
+
+            underground: {
+                accent: "#ff6b82",
+                accent2: "#65d6c3",
+                background: "#08090a",
+                surface: "#111315"
+            },
+
+            newspaper: {
+                accent: "#111111",
+                accent2: "#555555",
+                background: "#ece8dc",
+                surface: "#faf8f1"
+            },
+
+            "operating-system": {
+                accent: "#5ea1ff",
+                accent2: "#7ee2ff",
+                background: "#080b10",
+                surface: "#101620"
+            },
+
+            chaotic: {
+                accent: "#ff4fd8",
+                accent2: "#6affdb",
+                background: "#0a070c",
+                surface: "#140d18"
+            }
+        };
+
+        return (
+            palettes[family] ||
+            palettes.executive
+        );
+    }
+
+    /* ========================================================
        UI DNA
        ======================================================== */
 
@@ -1893,28 +1888,28 @@
         specialties
     }) {
         const families =
-            uiPool(
-                "ui_families",
-                DEFAULT_UI_FAMILIES
-            );
-
-        const layouts =
-            uiPool(
-                "layouts",
-                DEFAULT_LAYOUTS
-            );
-
-        const navs =
-            uiPool(
-                "navs",
-                DEFAULT_NAVS
-            );
-
-        const heroes =
-            uiPool(
-                "hero_modes",
-                DEFAULT_HERO_MODES
-            );
+            Array.isArray(
+                CONFIG.ui_families
+            ) &&
+            CONFIG.ui_families.length
+                ? CONFIG.ui_families
+                : [
+                    "executive",
+                    "terminal",
+                    "rpg",
+                    "manhwa",
+                    "dossier",
+                    "research",
+                    "luxury",
+                    "brutalist",
+                    "space",
+                    "detective",
+                    "spellbook",
+                    "underground",
+                    "newspaper",
+                    "operating-system",
+                    "chaotic"
+                ];
 
         const weights = {};
 
@@ -1924,28 +1919,39 @@
             weights[family] = 1;
         }
 
-        const addWeight = (
-            family,
+        function addWeight(
+            key,
             amount
-        ) => {
+        ) {
             if (
                 Object.prototype.hasOwnProperty.call(
                     weights,
-                    family
+                    key
                 )
             ) {
-                weights[family] += amount;
+                weights[key] += amount;
             }
-        };
+        }
 
         if (
             /backend|platform|systems|devops|infrastructure/i.test(
                 title
             )
         ) {
-            addWeight("terminal", 5);
-            addWeight("operating-system", 4);
-            addWeight("executive", 2);
+            addWeight(
+                "terminal",
+                5
+            );
+
+            addWeight(
+                "operating-system",
+                4
+            );
+
+            addWeight(
+                "executive",
+                2
+            );
         }
 
         if (
@@ -1953,8 +1959,15 @@
                 title
             )
         ) {
-            addWeight("research", 5);
-            addWeight("space", 2);
+            addWeight(
+                "research",
+                5
+            );
+
+            addWeight(
+                "space",
+                2
+            );
         }
 
         if (
@@ -1962,8 +1975,15 @@
                 title
             )
         ) {
-            addWeight("dossier", 5);
-            addWeight("detective", 4);
+            addWeight(
+                "dossier",
+                5
+            );
+
+            addWeight(
+                "detective",
+                4
+            );
         }
 
         if (
@@ -1971,8 +1991,15 @@
                 title
             )
         ) {
-            addWeight("manhwa", 4);
-            addWeight("luxury", 3);
+            addWeight(
+                "manhwa",
+                4
+            );
+
+            addWeight(
+                "luxury",
+                3
+            );
         }
 
         if (
@@ -1980,61 +2007,147 @@
                 genre
             )
         ) {
-            addWeight("rpg", 5);
-            addWeight("spellbook", 5);
-            addWeight("manhwa", 4);
+            addWeight(
+                "rpg",
+                5
+            );
+
+            addWeight(
+                "spellbook",
+                5
+            );
+
+            addWeight(
+                "manhwa",
+                4
+            );
         }
 
         if (
             /space|science fiction/i.test(
-                world.genre
+                safe(
+                    world.genre,
+                    genre
+                )
             )
         ) {
-            addWeight("space", 6);
-            addWeight("research", 3);
+            addWeight(
+                "space",
+                6
+            );
+
+            addWeight(
+                "research",
+                3
+            );
         }
 
         if (
             chaos > 78
         ) {
-            addWeight("chaotic", 7);
-            addWeight("brutalist", 3);
-            addWeight("underground", 3);
+            addWeight(
+                "chaotic",
+                7
+            );
+
+            addWeight(
+                "brutalist",
+                3
+            );
+
+            addWeight(
+                "underground",
+                3
+            );
         }
 
         if (
-            personality.includes(
-                "methodical"
+            /methodical/i.test(
+                personality
             )
         ) {
-            addWeight("executive", 4);
-            addWeight("research", 2);
+            addWeight(
+                "executive",
+                4
+            );
+
+            addWeight(
+                "research",
+                2
+            );
         }
 
         if (
-            personality.includes(
-                "chaotic"
+            /chaotic/i.test(
+                personality
             )
         ) {
-            addWeight("chaotic", 6);
+            addWeight(
+                "chaotic",
+                6
+            );
         }
 
         const family =
             weightedChoice(
                 weights
-            );
+            ) ||
+            pick(families);
 
-        const layout =
-            pick(layouts) ||
-            "dashboard";
+        const layouts =
+            Array.isArray(
+                CONFIG.layouts
+            ) &&
+            CONFIG.layouts.length
+                ? CONFIG.layouts
+                : [
+                    "asymmetric",
+                    "editorial",
+                    "command",
+                    "character-sheet",
+                    "case-file",
+                    "dashboard",
+                    "split-screen",
+                    "stacked",
+                    "magazine",
+                    "terminal-grid",
+                    "mission-control",
+                    "dense-grid"
+                ];
 
-        const nav =
-            pick(navs) ||
-            "top";
+        const navs =
+            Array.isArray(
+                CONFIG.navs
+            ) &&
+            CONFIG.navs.length
+                ? CONFIG.navs
+                : [
+                    "top",
+                    "rail",
+                    "floating",
+                    "command",
+                    "minimal",
+                    "drawer"
+                ];
 
-        const hero =
-            pick(heroes) ||
-            "identity";
+        const heroModes =
+            Array.isArray(
+                CONFIG.hero_modes
+            ) &&
+            CONFIG.hero_modes.length
+                ? CONFIG.hero_modes
+                : [
+                    "identity",
+                    "mission",
+                    "profile",
+                    "case",
+                    "status",
+                    "command",
+                    "character",
+                    "manifesto",
+                    "classified",
+                    "field-report"
+                ];
 
         const palette =
             choosePalette(
@@ -2057,33 +2170,36 @@
                     "compact",
                     "normal",
                     "spacious"
-                ]) ||
-                "normal";
+                ]);
         }
 
         const decoration =
             chaos > 80
-                ? (
-                    pick([
-                        "grid",
-                        "dots",
-                        "scanlines"
-                    ]) || "grid"
-                )
-                : (
-                    pick([
-                        "none",
-                        "grid",
-                        "dots"
-                    ]) || "none"
-                );
+                ? pick([
+                    "grid",
+                    "dots",
+                    "scanlines"
+                ])
+                : pick([
+                    "none",
+                    "grid",
+                    "dots"
+                ]);
 
         return {
             family,
-            layout,
-            nav,
-            hero,
+
+            layout:
+                pick(layouts),
+
+            nav:
+                pick(navs),
+
+            hero:
+                pick(heroModes),
+
             density,
+
             decoration,
 
             radius:
@@ -2109,8 +2225,8 @@
                 specialties.length,
 
             /*
-             * Kept for compatibility with older CSS/JS.
-             * The renderer itself remains card-first.
+             * Kept for compatibility with the existing
+             * UI system. Rendering itself remains card-first.
              */
             longForm: false,
             textHeavy: false,
@@ -2118,264 +2234,55 @@
         };
     }
 
-    function weightedChoice(weights) {
-        const entries =
-            Object.entries(
-                weights
-            );
-
-        if (!entries.length) {
-            return "executive";
-        }
-
-        const total =
-            entries.reduce(
-                (
-                    sum,
-                    [, weight]
-                ) =>
-                    sum +
-                    Math.max(
-                        0,
-                        Number(weight) || 0
-                    ),
-                0
-            );
-
-        if (total <= 0) {
-            return entries[0][0];
-        }
-
-        let cursor =
-            random() *
-            total;
-
-        for (
-            const [
-                key,
-                weight
-            ] of entries
-        ) {
-            cursor -=
-                Math.max(
-                    0,
-                    Number(weight) || 0
-                );
-
-            if (
-                cursor <= 0
-            ) {
-                return key;
-            }
-        }
-
-        return entries[
-            entries.length - 1
-        ][0];
-    }
-
-    function choosePalette(
-        family
-    ) {
-        const palettes = {
-            executive: {
-                accent: "#6e9cff",
-                accent2: "#7fe0c4",
-                background: "#090d14",
-                surface: "#111722"
-            },
-
-            terminal: {
-                accent: "#7dff8c",
-                accent2: "#35cfff",
-                background: "#050807",
-                surface: "#08100a"
-            },
-
-            rpg: {
-                accent: "#e9bd66",
-                accent2: "#9e82ff",
-                background: "#0e0b13",
-                surface: "#17121f"
-            },
-
-            manhwa: {
-                accent: "#ff719c",
-                accent2: "#8a7dff",
-                background: "#f4f1ed",
-                surface: "#fffdfa"
-            },
-
-            dossier: {
-                accent: "#e3b75c",
-                accent2: "#c94c48",
-                background: "#11100d",
-                surface: "#1a1813"
-            },
-
-            research: {
-                accent: "#66c9ff",
-                accent2: "#82e0b0",
-                background: "#081014",
-                surface: "#101b20"
-            },
-
-            luxury: {
-                accent: "#d9bd75",
-                accent2: "#eee2c0",
-                background: "#090909",
-                surface: "#111111"
-            },
-
-            brutalist: {
-                accent: "#ffff00",
-                accent2: "#ff3b30",
-                background: "#e8e8e8",
-                surface: "#ffffff"
-            },
-
-            space: {
-                accent: "#69c7ff",
-                accent2: "#b87cff",
-                background: "#03050b",
-                surface: "#080c16"
-            },
-
-            detective: {
-                accent: "#d9a951",
-                accent2: "#bb5151",
-                background: "#15120f",
-                surface: "#211c16"
-            },
-
-            spellbook: {
-                accent: "#cf9cff",
-                accent2: "#6fe3cf",
-                background: "#100b16",
-                surface: "#1b1224"
-            },
-
-            underground: {
-                accent: "#ff5c9b",
-                accent2: "#60e8b0",
-                background: "#08090b",
-                surface: "#121418"
-            },
-
-            newspaper: {
-                accent: "#171717",
-                accent2: "#555555",
-                background: "#e9e6dc",
-                surface: "#f7f4eb"
-            },
-
-            "operating-system": {
-                accent: "#6ea8ff",
-                accent2: "#8dffcb",
-                background: "#080b11",
-                surface: "#111722"
-            },
-
-            chaotic: {
-                accent: "#ff6bcb",
-                accent2: "#65f4ff",
-                background: "#0b0810",
-                surface: "#17101d"
-            }
-        };
-
-        return (
-            palettes[family] ||
-            palettes.executive
-        );
-    }
-
-    /* ========================================================
-       SIGNATURE
-       ======================================================== */
-
-    function makeSignature(
-        portfolio
-    ) {
-        return hashString([
-            portfolio.name,
-            portfolio.title,
-            portfolio.world.name,
-            portfolio.faction,
-            portfolio.genre,
-            portfolio.ui.family,
-            portfolio.ui.layout,
-            portfolio.ui.hero,
-
-            portfolio.experiences
-                .map(item => item.id)
-                .join(","),
-
-            portfolio.projects
-                .map(item => item.id)
-                .join(","),
-
-            portfolio.npcs
-                .map(item => item.id)
-                .join(","),
-
-            portfolio.incidents
-                .map(item => item.code)
-                .join(",")
-        ].join("|"));
-    }
-
     /* ========================================================
        PORTFOLIO GENERATION
        ======================================================== */
 
     function generatePortfolio() {
-        runtime.npcIndex.clear();
-        runtime.worldIndex.clear();
-
         const world =
             generateWorld();
 
         const name =
             safe(
-                pick(
-                    pool("names")
+                configPick(
+                    "names",
+                    "Unknown Engineer"
                 ),
                 "Unknown Engineer"
             );
 
         const title =
             safe(
-                pick(
-                    pool("titles")
+                configPick(
+                    "titles",
+                    "Software Engineer"
                 ),
                 "Software Engineer"
             );
 
         const personality =
             safe(
-                pick(
-                    pool("personalities")
+                configPick(
+                    "personalities",
+                    "systems-minded"
                 ),
                 "systems-minded"
             );
 
-        const industries =
-            pool(
-                "industries",
-                ["software infrastructure"]
-            );
-
         const industry =
             safe(
-                pick(industries),
+                configPick(
+                    "industries",
+                    "software infrastructure"
+                ),
                 "software infrastructure"
             );
 
         const education =
             safe(
-                pick(
-                    pool("education")
+                configPick(
+                    "education",
+                    "Self-taught engineering background"
                 ),
                 "Self-taught engineering background"
             );
@@ -2385,7 +2292,12 @@
                 pick(
                     world.factions.length
                         ? world.factions
-                        : pool("factions")
+                        : pool(
+                            "factions",
+                            [
+                                "Independent Operators"
+                            ]
+                        )
                 ),
                 "Independent Operators"
             );
@@ -2396,20 +2308,18 @@
                 "speculative fiction"
             );
 
-        const specialtyPool =
-            pool(
-                "specialties",
-                ["systems engineering"]
-            );
-
         const specialties =
-            sample(
-                specialtyPool,
-                clamp(
-                    integer(6, 11),
-                    1,
-                    specialtyPool.length
-                )
+            configSample(
+                "specialties",
+                integer(6, 11),
+                [
+                    "Python",
+                    "JavaScript",
+                    "Systems Design",
+                    "Automation",
+                    "Web Development",
+                    "Infrastructure"
+                ]
             );
 
         const years =
@@ -2418,63 +2328,32 @@
         const chaos =
             integer(38, 100);
 
-        /*
-         * Generation sizes.
-         *
-         * If the Python config provides explicit counts,
-         * use those values. Otherwise use the intended
-         * procedural defaults.
-         */
-
-        const generation =
-            CONFIG.generation_counts ||
-            CONFIG.generation ||
-            {};
-
         const npcCount =
-            Number(
-                generation.npcs ??
-                generation.NPCs ??
-                80
-            ) || 80;
+            integer(6, 11);
 
         const projectCount =
-            Number(
-                generation.projects ??
-                64
-            ) || 64;
+            integer(5, 9);
 
         const experienceCount =
-            Number(
-                generation.experiences ??
-                48
-            ) || 48;
+            integer(4, 7);
 
         const incidentCount =
-            Number(
-                generation.incidents ??
-                64
-            ) || 64;
+            integer(4, 8);
 
         const questCount =
-            Number(
-                generation.quests ??
-                48
-            ) || 48;
+            integer(2, 5);
 
-        /*
-         * ----------------------------------------------------
-         * NPCS
-         * ----------------------------------------------------
-         */
+        /* ---------------- NPCs ---------------- */
 
         const npcs = [];
-        const usedNPCNames = new Set();
+
+        const usedNPCNames =
+            new Set();
 
         for (
-            let i = 0;
-            i < npcCount;
-            i++
+            let index = 0;
+            index < npcCount;
+            index++
         ) {
             npcs.push(
                 generateNPC(
@@ -2485,18 +2364,14 @@
             );
         }
 
-        /*
-         * ----------------------------------------------------
-         * EXPERIENCES
-         * ----------------------------------------------------
-         */
+        /* ---------------- Experiences ---------------- */
 
         const experiences = [];
 
         for (
-            let i = 0;
-            i < experienceCount;
-            i++
+            let index = 0;
+            index < experienceCount;
+            index++
         ) {
             experiences.push(
                 generateExperience(
@@ -2507,42 +2382,33 @@
             );
         }
 
-        /*
-         * ----------------------------------------------------
-         * PROJECTS
-         * ----------------------------------------------------
-         */
+        /* ---------------- Projects ---------------- */
 
         const projects = [];
 
         for (
-            let i = 0;
-            i < projectCount;
-            i++
+            let index = 0;
+            index < projectCount;
+            index++
         ) {
             projects.push(
                 generateProject(
                     world,
                     industry,
                     specialties,
-                    npcs,
-                    i + 1
+                    npcs
                 )
             );
         }
 
-        /*
-         * ----------------------------------------------------
-         * INCIDENTS
-         * ----------------------------------------------------
-         */
+        /* ---------------- Incidents ---------------- */
 
         const incidents = [];
 
         for (
-            let i = 0;
-            i < incidentCount;
-            i++
+            let index = 0;
+            index < incidentCount;
+            index++
         ) {
             incidents.push(
                 generateIncident(
@@ -2553,18 +2419,14 @@
             );
         }
 
-        /*
-         * ----------------------------------------------------
-         * QUESTS
-         * ----------------------------------------------------
-         */
+        /* ---------------- Quests ---------------- */
 
         const quests = [];
 
         for (
-            let i = 0;
-            i < questCount;
-            i++
+            let index = 0;
+            index < questCount;
+            index++
         ) {
             quests.push(
                 generateQuest(
@@ -2575,11 +2437,7 @@
             );
         }
 
-        /*
-         * ----------------------------------------------------
-         * UI
-         * ----------------------------------------------------
-         */
+        /* ---------------- UI ---------------- */
 
         const ui =
             generateUIDNA({
@@ -2591,36 +2449,20 @@
                 specialties
             });
 
-        /*
-         * ----------------------------------------------------
-         * METRICS
-         * ----------------------------------------------------
-         */
+        /* ---------------- Metrics ---------------- */
 
         const metrics = {
             deployments:
-                integer(
-                    180,
-                    1800
-                ),
+                integer(180, 1800),
 
             systems:
-                integer(
-                    7,
-                    49
-                ),
+                integer(7, 49),
 
             incidents:
-                integer(
-                    8,
-                    72
-                ),
+                integer(8, 72),
 
             users:
-                integer(
-                    2500,
-                    99000000
-                ),
+                integer(2500, 99000000),
 
             uptime:
                 (
@@ -2629,35 +2471,19 @@
                 ).toFixed(2),
 
             coffee:
-                integer(
-                    731,
-                    29821
-                ),
+                integer(731, 29821),
 
             worldsVisited:
-                integer(
-                    2,
-                    19
-                ),
+                integer(2, 19),
 
             unresolvedMysteries:
-                integer(
-                    1,
-                    37
-                ),
+                integer(1, 37),
 
             realityStability:
-                integer(
-                    11,
-                    99
-                )
+                integer(11, 99)
         };
 
-        /*
-         * ----------------------------------------------------
-         * TIMELINE
-         * ----------------------------------------------------
-         */
+        /* ---------------- Timeline ---------------- */
 
         const timeline =
             generateTimeline(
@@ -2666,34 +2492,60 @@
                 experiences
             );
 
-        /*
-         * ----------------------------------------------------
-         * ARCHIVE
-         * ----------------------------------------------------
-         */
+        /* ---------------- Archive dates ---------------- */
 
-        const archiveDates =
-            orderedArchiveDates(
-                years
+        const currentYear =
+            new Date().getFullYear();
+
+        const earliestYear =
+            Math.max(
+                2012,
+                currentYear - years
             );
+
+        const createdYear =
+            integer(
+                earliestYear,
+                currentYear
+            );
+
+        const updatedYear =
+            integer(
+                createdYear,
+                currentYear + 1
+            );
+
+        const created =
+            `${createdYear}-${String(
+                integer(1, 12)
+            ).padStart(2, "0")}-${String(
+                integer(1, 28)
+            ).padStart(2, "0")}`;
+
+        const lastUpdated =
+            `${updatedYear}-${String(
+                integer(1, 12)
+            ).padStart(2, "0")}-${String(
+                integer(1, 28)
+            ).padStart(2, "0")}`;
 
         const archive = {
             classification:
-                pick([
-                    "PUBLIC",
-                    "PARTIALLY CLASSIFIED",
-                    "RESTRICTED",
-                    "CONFIDENTIAL",
-                    "ARCHIVED",
-                    "DO NOT DISTRIBUTE"
-                ]) ||
-                "PUBLIC",
+                configPick(
+                    "archive_classifications",
+                    pick([
+                        "PUBLIC",
+                        "PARTIALLY CLASSIFIED",
+                        "RESTRICTED",
+                        "CONFIDENTIAL",
+                        "ARCHIVED",
+                        "DO NOT DISTRIBUTE"
+                    ])
+                ),
 
-            created:
-                archiveDates.created,
+            created,
 
-            lastUpdated:
-                archiveDates.lastUpdated,
+            lastUpdated,
 
             author:
                 name,
@@ -2702,15 +2554,17 @@
                 randomCode(),
 
             warning:
-                pick([
-                    "Some records may describe events that have not happened yet.",
-                    "Several names have been redacted for reasons nobody can explain.",
-                    "This archive is considered structurally harmless.",
-                    "Reading beyond this point is technically optional.",
-                    "The archive has requested that it not be deleted.",
-                    "Cross-reference inconsistencies are expected."
-                ]) ||
-                "Cross-reference inconsistencies are expected."
+                configPick(
+                    "archive_warnings",
+                    pick([
+                        "Some records may describe events that have not happened yet.",
+                        "Several names have been redacted for reasons nobody can explain.",
+                        "This archive is considered structurally harmless.",
+                        "Reading beyond this point is technically optional.",
+                        "The archive has requested that it not be deleted.",
+                        "Cross-reference inconsistencies are expected."
+                    ])
+                )
         };
 
         const portfolio = {
@@ -2769,8 +2623,56 @@
         return portfolio;
     }
 
+    /* ========================================================
+       SIGNATURE
+       ======================================================== */
+
+    function makeSignature(
+        portfolio
+    ) {
+        return hashString([
+            portfolio.name,
+            portfolio.title,
+            portfolio.world.name,
+            portfolio.faction,
+            portfolio.genre,
+            portfolio.ui.family,
+            portfolio.ui.layout,
+            portfolio.ui.nav,
+            portfolio.ui.hero,
+
+            portfolio.experiences
+                .map(
+                    item =>
+                        item.id
+                )
+                .join(","),
+
+            portfolio.projects
+                .map(
+                    item =>
+                        item.id
+                )
+                .join(","),
+
+            portfolio.npcs
+                .map(
+                    item =>
+                        item.id
+                )
+                .join(","),
+
+            portfolio.incidents
+                .map(
+                    item =>
+                        item.code
+                )
+                .join(",")
+        ].join("|"));
+    }
+
     function generateUniquePortfolio() {
-        let portfolio;
+        let portfolio = null;
 
         for (
             let attempt = 0;
@@ -2807,61 +2709,35 @@
             document.documentElement;
 
         const ui =
-            portfolio.ui || {};
+            portfolio.ui;
 
         root.style.setProperty(
             "--accent",
-            safe(
-                ui.accent,
-                "#8b7cff"
-            )
+            ui.accent
         );
 
         root.style.setProperty(
             "--accent-2",
-            safe(
-                ui.accent2,
-                "#58e0bd"
-            )
+            ui.accent2
         );
 
         root.style.setProperty(
             "--bg",
-            safe(
-                ui.background,
-                "#090a0c"
-            )
+            ui.background
         );
 
         root.style.setProperty(
             "--surface",
-            safe(
-                ui.surface,
-                "#101216"
-            )
+            ui.surface
         );
 
         root.style.setProperty(
             "--radius",
-            `${clamp(
-                Number(ui.radius) || 0,
-                0,
-                32
-            )}px`
-        );
-
-        root.style.setProperty(
-            "--chaos",
-            String(
-                portfolio.chaos
-            )
+            `${ui.radius}px`
         );
 
         root.dataset.uiFamily =
-            safe(
-                ui.family,
-                "executive"
-            );
+            ui.family;
     }
 
     /* ========================================================
@@ -2886,10 +2762,7 @@
         portfolio
     ) {
         const nav =
-            safe(
-                portfolio.ui.nav,
-                "top"
-            );
+            portfolio.ui.nav;
 
         const links = [
             navLink(
@@ -2925,11 +2798,6 @@
             navLink(
                 "quests",
                 "Quests"
-            ),
-
-            navLink(
-                "timeline",
-                "Timeline"
             )
         ].join("");
 
@@ -2948,9 +2816,7 @@
                 aria-label="Archive navigation"
             >
 
-                <div class="nav-links">
-                    ${links}
-                </div>
+                ${links}
 
                 <button
                     class="action-button"
@@ -2992,7 +2858,8 @@
                         )}
                         /
                         ${escapeHTML(
-                            portfolio.archive.archiveNumber
+                            portfolio.archive
+                                .archiveNumber
                         )}
                     </div>
 
@@ -3033,29 +2900,26 @@
                     "UNREASONABLY PRODUCTIVE",
                     "UNVERIFIED",
                     "UNDER OBSERVATION"
-                ]) || "OPERATIONAL"}`,
+                ])}`,
 
             command:
-                `Command interface for a ${portfolio.title.toLowerCase()} with ${portfolio.years} years of accumulated engineering damage.`,
+                `Command interface for a ${safe(
+                    portfolio.title,
+                    "software engineer"
+                ).toLowerCase()} with ${portfolio.years} years of accumulated engineering damage.`,
 
             character:
                 `Character profile unlocked: ${portfolio.name}.`,
 
             manifesto:
-                `Make the system understandable. Then make it impossible for the system to surprise you.`,
+                "Make the system understandable. Then make it impossible for the system to surprise you.",
 
             classified:
-                `This record was not originally intended to become a portfolio.`,
+                "This record was not originally intended to become a portfolio.",
 
             "field-report":
                 `Field report from ${portfolio.world.name}: engineer remains operational. Infrastructure remains questionable.`
         };
-
-        const selectedHero =
-            heroCopy[
-                portfolio.ui.hero
-            ] ||
-            heroCopy.identity;
 
         return `
             <section
@@ -3068,13 +2932,18 @@
                     <div>
 
                         <div class="eyebrow">
+
                             ${escapeHTML(
-                                portfolio.archive.classification
+                                portfolio.archive
+                                    .classification
                             )}
+
                             /
+
                             ${escapeHTML(
                                 portfolio.world.genre
                             )}
+
                         </div>
 
                         <h1>
@@ -3084,13 +2953,20 @@
                         </h1>
 
                         <p class="hero-title">
+
                             ${escapeHTML(
                                 portfolio.title
                             )}
+
                             ·
+
                             ${escapeHTML(
-                                selectedHero
+                                heroCopy[
+                                    portfolio.ui.hero
+                                ] ||
+                                heroCopy.identity
                             )}
+
                         </p>
 
                         <div class="hero-actions">
@@ -3138,7 +3014,8 @@
 
                         ${metaBox(
                             "Archive Status",
-                            portfolio.archive.classification
+                            portfolio.archive
+                                .classification
                         )}
 
                         ${metaBox(
@@ -3162,7 +3039,9 @@
             <div class="meta-box">
 
                 <span class="meta-label">
-                    ${escapeHTML(label)}
+                    ${escapeHTML(
+                        label
+                    )}
                 </span>
 
                 <span class="meta-value">
@@ -3226,11 +3105,15 @@
             <article class="stat card">
 
                 <span class="stat-number">
-                    ${escapeHTML(value)}
+                    ${escapeHTML(
+                        value
+                    )}
                 </span>
 
                 <span class="stat-label">
-                    ${escapeHTML(label)}
+                    ${escapeHTML(
+                        label
+                    )}
                 </span>
 
             </article>
@@ -3252,11 +3135,15 @@
                 <div>
 
                     <div class="section-kicker">
-                        ${escapeHTML(kicker)}
+                        ${escapeHTML(
+                            kicker
+                        )}
                     </div>
 
                     <h2>
-                        ${escapeHTML(title)}
+                        ${escapeHTML(
+                            title
+                        )}
                     </h2>
 
                     ${
@@ -3278,7 +3165,7 @@
     }
 
     /* ========================================================
-       CARD HELPERS
+       SMALL CARD HELPERS
        ======================================================== */
 
     function infoCard(
@@ -3288,13 +3175,13 @@
     ) {
         return `
             <article
-                class="card content-card ${escapeHTML(
-                    extraClass
-                )}"
+                class="card content-card ${extraClass}"
             >
 
                 <span class="meta-label">
-                    ${escapeHTML(label)}
+                    ${escapeHTML(
+                        label
+                    )}
                 </span>
 
                 <p class="card-text">
@@ -3317,13 +3204,13 @@
     ) {
         return `
             <article
-                class="card content-card ${escapeHTML(
-                    extraClass
-                )}"
+                class="card content-card ${extraClass}"
             >
 
                 <div class="section-kicker">
-                    ${escapeHTML(label)}
+                    ${escapeHTML(
+                        label
+                    )}
                 </div>
 
                 <p class="card-text">
@@ -3351,18 +3238,22 @@
         }
 
         return `
-            <div class="tags ${escapeHTML(
-                className
-            )}">
+            <div
+                class="tags ${className}"
+            >
+
                 ${list
                     .map(
                         value => `
                             <span class="tag">
-                                ${escapeHTML(value)}
+                                ${escapeHTML(
+                                    value
+                                )}
                             </span>
                         `
                     )
                     .join("")}
+
             </div>
         `;
     }
@@ -3374,13 +3265,13 @@
     function renderProfile(
         portfolio
     ) {
-        const firstSpecialty =
+        const primarySpecialty =
             portfolio.specialties[0] ||
-            "systems engineering";
+            "Systems Engineering";
 
-        const secondSpecialty =
+        const secondarySpecialty =
             portfolio.specialties[1] ||
-            "software architecture";
+            primarySpecialty;
 
         return `
             <section
@@ -3391,14 +3282,16 @@
                 ${sectionHeader(
                     "Subject Profile",
                     "The person behind the incidents.",
-                    `${portfolio.name} operates as a ${portfolio.title} with a focus on ${portfolio.specialties.slice(0, 5).join(", ")}.`
+                    `${portfolio.name} operates as a ${portfolio.title} with a focus on ${portfolio.specialties
+                        .slice(0, 5)
+                        .join(", ")}.`
                 )}
 
                 <div class="card-grid profile-card-grid">
 
                     ${textCard(
                         "Operating Profile",
-                        `${portfolio.name} is ${articleFor(portfolio.personality)} ${portfolio.personality} ${portfolio.title.toLowerCase()} working primarily in ${portfolio.industry}.`
+                        `${portfolio.name} is a ${portfolio.personality} ${portfolio.title.toLowerCase()} working primarily in ${portfolio.industry}.`
                     )}
 
                     ${textCard(
@@ -3417,12 +3310,12 @@
 
                     ${renderProfileFact(
                         "Primary Specialty",
-                        firstSpecialty
+                        primarySpecialty
                     )}
 
                     ${renderProfileFact(
                         "Secondary Specialty",
-                        secondSpecialty
+                        secondarySpecialty
                     )}
 
                     ${renderProfileFact(
@@ -3471,12 +3364,16 @@
             <article class="card content-card">
 
                 <span class="meta-label">
-                    ${escapeHTML(label)}
+                    ${escapeHTML(
+                        label
+                    )}
                 </span>
 
                 <h3 class="card-title">
                     ${escapeHTML(
-                        safe(value)
+                        safe(
+                            value
+                        )
                     )}
                 </h3>
 
@@ -3529,7 +3426,8 @@
         index
     ) {
         const narrative =
-            experience.narrative || {};
+            experience.narrative ||
+            {};
 
         return `
             <article
@@ -3708,7 +3606,8 @@
         index
     ) {
         const narrative =
-            project.narrative || {};
+            project.narrative ||
+            {};
 
         return `
             <article
@@ -3868,12 +3767,16 @@
             <div class="project-metric">
 
                 <span>
-                    ${escapeHTML(label)}
+                    ${escapeHTML(
+                        label
+                    )}
                 </span>
 
                 <strong>
                     ${escapeHTML(
-                        safe(value)
+                        safe(
+                            value
+                        )
                     )}
                 </strong>
 
@@ -4316,12 +4219,16 @@
             <div class="npc-fact">
 
                 <span>
-                    ${escapeHTML(label)}
+                    ${escapeHTML(
+                        label
+                    )}
                 </span>
 
                 <strong>
                     ${escapeHTML(
-                        safe(value)
+                        safe(
+                            value
+                        )
                     )}
                 </strong>
 
@@ -4374,7 +4281,8 @@
         index
     ) {
         const narrative =
-            incident.narrative || {};
+            incident.narrative ||
+            {};
 
         return `
             <article
@@ -4790,7 +4698,8 @@
 
                     Archive:
                     ${escapeHTML(
-                        portfolio.archive.archiveNumber
+                        portfolio.archive
+                            .archiveNumber
                     )}
 
                     <br>
@@ -4832,7 +4741,7 @@
         );
 
         const ui =
-            portfolio.ui || {};
+            portfolio.ui;
 
         const app =
             document.getElementById(
@@ -4844,59 +4753,36 @@
         }
 
         /*
-         * IMPORTANT:
-         * These classes preserve the UI-family system.
+         * Preserve the existing UI DNA system.
          */
-
         app.className = [
             "app",
 
             `ui-${slug(
-                safe(
-                    ui.family,
-                    "executive"
-                )
+                ui.family
             )}`,
 
             `layout-${slug(
-                safe(
-                    ui.layout,
-                    "dashboard"
-                )
+                ui.layout
             )}`,
 
             `density-${slug(
-                safe(
-                    ui.density,
-                    "normal"
-                )
+                ui.density
             )}`
         ].join(" ");
 
         app.dataset.decoration =
-            safe(
-                ui.decoration,
-                "none"
-            );
+            ui.decoration;
 
         app.dataset.navigation =
-            safe(
-                ui.nav,
-                "top"
-            );
+            ui.nav;
 
         app.dataset.generation =
             String(
                 runtime.generationCount
             );
 
-        /*
-         * Render in one assignment.
-         * This prevents partially-rendered states.
-         */
-
         app.innerHTML = `
-
             ${renderTopbar(
                 portfolio
             )}
@@ -4972,22 +4858,13 @@
         );
 
         /*
-         * Avoid scroll errors in browsers that do not
-         * recognize behavior:"instant".
+         * Instant reset.
+         * Avoid relying on unsupported behavior values.
          */
-
-        try {
-            window.scrollTo({
-                top: 0,
-                left: 0,
-                behavior: "instant"
-            });
-        } catch {
-            window.scrollTo(
-                0,
-                0
-            );
-        }
+        window.scrollTo(
+            0,
+            0
+        );
     }
 
     /* ========================================================
@@ -5049,24 +4926,10 @@
                         element.scrollIntoView({
                             behavior:
                                 "smooth",
+
                             block:
                                 "start"
                         });
-
-                        /*
-                         * Preserve the visible URL anchor
-                         * without reloading the page.
-                         */
-
-                        try {
-                            history.replaceState(
-                                null,
-                                "",
-                                target
-                            );
-                        } catch {
-                            /* Browser may block history changes. */
-                        }
                     }
                 );
             }
@@ -5123,7 +4986,7 @@
                 "hidden";
 
             live.style.clip =
-                "rect(0 0 0 0)";
+                "rect(0, 0, 0, 0)";
 
             live.style.whiteSpace =
                 "nowrap";
@@ -5157,7 +5020,7 @@
                 next
             );
         } catch (error) {
-            renderRuntimeError(
+            showRuntimeError(
                 error
             );
         }
@@ -5165,13 +5028,16 @@
 
     /* ========================================================
        RUNTIME ERROR SCREEN
+       --------------------------------------------------------
+       Instead of silently producing a blank page, show the
+       actual JavaScript error.
        ======================================================== */
 
-    function renderRuntimeError(
+    function showRuntimeError(
         error
     ) {
         console.error(
-            "ABSURD CHAOS PORTFOLIO RUNTIME ERROR:",
+            "ABSURD CHAOS PORTFOLIO ERROR:",
             error
         );
 
@@ -5184,23 +5050,28 @@
             return;
         }
 
+        const message =
+            error &&
+            error.message
+                ? error.message
+                : String(error);
+
         app.innerHTML = `
             <main style="
                 min-height:100vh;
                 display:grid;
                 place-items:center;
-                padding:24px;
-                font-family:system-ui,sans-serif;
-                background:var(--bg,#090a0c);
-                color:var(--text,#f5f7fa);
+                padding:32px;
             ">
 
-                <section style="
-                    width:min(100%,720px);
-                    padding:32px;
-                    border:1px solid rgba(255,255,255,.14);
-                    background:var(--surface,#101216);
-                    border-radius:var(--radius,16px);
+                <article style="
+                    width:min(760px,100%);
+                    padding:28px;
+                    border:1px solid rgba(255,255,255,.15);
+                    border-radius:16px;
+                    background:rgba(255,255,255,.04);
+                    color:var(--text,#f5f7fa);
+                    font-family:system-ui,sans-serif;
                 ">
 
                     <div style="
@@ -5208,72 +5079,97 @@
                         letter-spacing:.14em;
                         text-transform:uppercase;
                         opacity:.65;
-                        margin-bottom:12px;
+                        margin-bottom:10px;
                     ">
-                        Runtime Incident
+                        Runtime Error
                     </div>
 
                     <h1 style="
                         margin:0 0 12px;
                     ">
-                        The portfolio generator encountered an anomaly.
+                        Portfolio generation failed
                     </h1>
 
                     <p style="
-                        opacity:.75;
-                        line-height:1.7;
+                        line-height:1.6;
+                        opacity:.8;
                     ">
-                        The generator failed while constructing this
-                        fictional reality. Try generating another reality.
+                        The page did not silently fail.
+                        A JavaScript error was detected.
                     </p>
+
+                    <pre style="
+                        white-space:pre-wrap;
+                        overflow:auto;
+                        padding:16px;
+                        border-radius:10px;
+                        background:rgba(0,0,0,.3);
+                    ">${escapeHTML(
+                        message
+                    )}</pre>
 
                     <button
                         type="button"
-                        data-recover
+                        data-reload-page
                         style="
                             border:0;
-                            padding:12px 18px;
                             border-radius:10px;
+                            padding:12px 18px;
                             cursor:pointer;
-                            background:var(--accent,#8b7cff);
-                            color:#fff;
                             font:inherit;
                         "
                     >
-                        Retry Generation
+                        Reload
                     </button>
 
-                </section>
+                </article>
 
             </main>
         `;
 
-        const recover =
-            app.querySelector(
-                "[data-recover]"
+        const reload =
+            $(
+                "[data-reload-page]"
             );
 
-        if (recover) {
-            recover.addEventListener(
+        if (reload) {
+            reload.addEventListener(
                 "click",
                 () => {
-                    try {
-                        const next =
-                            generateUniquePortfolio();
-
-                        render(
-                            next
-                        );
-                    } catch (retryError) {
-                        console.error(
-                            "Retry failed:",
-                            retryError
-                        );
-                    }
+                    window.location.reload();
                 }
             );
         }
     }
+
+    /* ========================================================
+       GLOBAL ERROR HANDLING
+       ======================================================== */
+
+    window.addEventListener(
+        "error",
+        event => {
+            if (
+                event &&
+                event.error
+            ) {
+                console.error(
+                    "ABSURD CHAOS GLOBAL ERROR:",
+                    event.error
+                );
+            }
+        }
+    );
+
+    window.addEventListener(
+        "unhandledrejection",
+        event => {
+            console.error(
+                "ABSURD CHAOS UNHANDLED PROMISE:",
+                event.reason
+            );
+        }
+    );
 
     /* ========================================================
        KEYBOARD SHORTCUT
@@ -5283,30 +5179,17 @@
         "keydown",
         event => {
             if (
-                event.defaultPrevented
-            ) {
-                return;
-            }
-
-            if (
                 String(
                     event.key
-                ).toLowerCase() !== "g"
-            ) {
-                return;
-            }
-
-            if (
-                isTypingTarget(
+                ).toLowerCase() === "g" &&
+                !isTypingTarget(
                     event.target
                 )
             ) {
-                return;
+                event.preventDefault();
+
+                generateAndRender();
             }
-
-            event.preventDefault();
-
-            generateAndRender();
         }
     );
 
@@ -5329,27 +5212,6 @@
     }
 
     /* ========================================================
-       VISIBILITY / PERFORMANCE
-       ======================================================== */
-
-    document.addEventListener(
-        "visibilitychange",
-        () => {
-            /*
-             * Deliberately do nothing.
-             *
-             * The portfolio is generated only when the user
-             * explicitly refreshes or requests another reality.
-             *
-             * No timers.
-             * No polling.
-             * No storage.
-             * No background requests.
-             */
-        }
-    );
-
-    /* ========================================================
        BOOT
        ======================================================== */
 
@@ -5358,11 +5220,17 @@
             const portfolio =
                 generateUniquePortfolio();
 
+            if (!portfolio) {
+                throw new Error(
+                    "Portfolio generation returned no portfolio."
+                );
+            }
+
             render(
                 portfolio
             );
         } catch (error) {
-            renderRuntimeError(
+            showRuntimeError(
                 error
             );
         }
