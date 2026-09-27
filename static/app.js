@@ -13,9 +13,6 @@
    - No database
    - No API calls
 
-   IMPORTANT:
-   The UI DNA system remains procedural.
-
    Every generation can change:
    - UI family
    - layout
@@ -33,8 +30,7 @@
    - quests
    - chronology
 
-   Content is intentionally rendered as contained cards rather
-   than unrestricted text walls.
+   Content is deliberately card-first.
    ============================================================ */
 
 (() => {
@@ -46,7 +42,7 @@
        CONFIGURATION FAILURE
        ======================================================== */
 
-    if (!CONFIG) {
+    if (!CONFIG || typeof CONFIG !== "object") {
         document.body.innerHTML = `
             <main style="
                 min-height:100vh;
@@ -55,22 +51,26 @@
                 padding:2rem;
                 font-family:system-ui,sans-serif;
                 background:#08090b;
-                color:white;
+                color:#fff;
             ">
                 <div style="
-                    max-width:42rem;
+                    width:min(100%,42rem);
                     padding:2rem;
                     border:1px solid rgba(255,255,255,.14);
                     background:#111318;
+                    border-radius:16px;
                 ">
                     <h1>Configuration Missing</h1>
                     <p>
                         The fictional archive could not be initialized.
                     </p>
+                    <p>
+                        Rebuild the generated page with
+                        <code>python3 generator.py</code>.
+                    </p>
                 </div>
             </main>
         `;
-
         return;
     }
 
@@ -110,19 +110,12 @@
             window.crypto &&
             typeof window.crypto.getRandomValues === "function"
         ) {
-            const buffer =
-                new Uint32Array(2);
+            const buffer = new Uint32Array(2);
 
-            window.crypto.getRandomValues(
-                buffer
-            );
+            window.crypto.getRandomValues(buffer);
 
             return (
-                (
-                    buffer[0] *
-                    4294967296 +
-                    buffer[1]
-                ) /
+                (buffer[0] * 4294967296 + buffer[1]) /
                 18446744073709551616
             );
         }
@@ -130,88 +123,85 @@
         return Math.random();
     };
 
-    const integer = (
-        min,
-        max
-    ) => {
+    const integer = (min, max) => {
+        min = Number(min);
+        max = Number(max);
+
+        if (!Number.isFinite(min)) min = 0;
+        if (!Number.isFinite(max)) max = min;
+
+        if (max < min) {
+            [min, max] = [max, min];
+        }
+
         return (
             Math.floor(
-                random() *
-                (
-                    max -
-                    min +
-                    1
-                )
-            ) +
-            min
+                random() * (max - min + 1)
+            ) + min
         );
     };
 
-    const pick = (
-        array
-    ) => {
-        if (
-            !Array.isArray(array) ||
-            !array.length
-        ) {
+    const pick = array => {
+        if (!Array.isArray(array) || !array.length) {
             return "";
         }
 
         return array[
-            Math.floor(
-                random() *
-                array.length
-            )
+            Math.floor(random() * array.length)
         ];
     };
 
-    const sample = (
-        array,
-        count
-    ) => {
-        if (
-            !Array.isArray(array) ||
-            !array.length
-        ) {
+    const sample = (array, count) => {
+        if (!Array.isArray(array) || !array.length) {
             return [];
         }
 
         const copy = [...array];
         const result = [];
 
+        count = clamp(
+            Number(count) || 0,
+            0,
+            copy.length
+        );
+
         while (
             copy.length &&
             result.length < count
         ) {
-            const index =
-                Math.floor(
-                    random() *
-                    copy.length
-                );
+            const index = Math.floor(
+                random() * copy.length
+            );
 
             result.push(
-                copy.splice(
-                    index,
-                    1
-                )[0]
+                copy.splice(index, 1)[0]
             );
         }
 
         return result;
     };
 
-    const clamp = (
-        value,
-        min,
-        max
-    ) =>
+    const clamp = (value, min, max) =>
         Math.min(
-            Math.max(
-                value,
-                min
-            ),
+            Math.max(value, min),
             max
         );
+
+    /* ========================================================
+       CONFIG POOL HELPERS
+       ======================================================== */
+
+    function pool(name, fallback = []) {
+        const value = CONFIG[name];
+
+        return Array.isArray(value)
+            ? value
+            : fallback;
+    }
+
+    function firstPoolValue(name, fallback = "") {
+        return pick(pool(name)) || fallback;
+    }
 
     /* ========================================================
        TEXT HELPERS
@@ -221,174 +211,146 @@
         value,
         fallback = "Unknown"
     ) => {
-        const text =
-            String(
-                value ?? ""
-            )
-                .replace(/\s+/g, " ")
-                .trim();
+        const text = String(value ?? "")
+            .replace(/\s+/g, " ")
+            .trim();
 
         return text || fallback;
     };
 
-    const safeArray = (
-        value
-    ) => {
-        if (
-            !Array.isArray(value)
-        ) {
+    const safeArray = value => {
+        if (!Array.isArray(value)) {
             return [];
         }
 
         return value
-            .map(
-                item =>
-                    safe(
-                        item,
-                        ""
-                    )
-            )
+            .map(item => safe(item, ""))
             .filter(Boolean);
     };
 
-    const slug = (
-        value
-    ) =>
-        String(
-            value ?? ""
-        )
+    const slug = value =>
+        String(value ?? "")
             .toLowerCase()
-            .replace(
-                /[^a-z0-9]+/g,
-                "-"
-            )
-            .replace(
-                /^-+|-+$/g,
-                "");
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "");
 
-    const capitalize = (
-        value
-    ) => {
-        const text =
-            safe(
-                value,
-                ""
-            );
+    const capitalize = value => {
+        const text = safe(value, "");
 
         if (!text) {
             return "";
         }
 
         return (
-            text.charAt(0)
-                .toUpperCase() +
+            text.charAt(0).toUpperCase() +
             text.slice(1)
         );
     };
 
-    const escapeHTML = (
-        value
-    ) => {
-        const div =
-            document.createElement(
-                "div"
-            );
+    const escapeHTML = value => {
+        const div = document.createElement("div");
 
-        div.textContent =
-            String(
-                value ?? ""
-            );
+        div.textContent = String(value ?? "");
 
         return div.innerHTML;
     };
 
-    const initials = (
-        name
-    ) => {
-        const result =
-            String(
-                name ?? ""
-            )
-                .split(/\s+/)
-                .filter(Boolean)
-                .map(
-                    part =>
-                        part.charAt(0)
-                )
-                .join("")
-                .slice(
-                    0,
-                    2
-                )
-                .toUpperCase();
+    const initials = name => {
+        const result = String(name ?? "")
+            .split(/\s+/)
+            .filter(Boolean)
+            .map(part => part.charAt(0))
+            .join("")
+            .slice(0, 2)
+            .toUpperCase();
 
         return result || "?";
     };
 
-    const formatNumber = (
-        value
-    ) => {
-        const number =
-            Number(value);
+    const formatNumber = value => {
+        const number = Number(value);
 
-        if (
-            !Number.isFinite(
-                number
-            )
-        ) {
+        if (!Number.isFinite(number)) {
             return "0";
         }
 
-        return new Intl.NumberFormat(
-            "en-US",
-            {
-                notation:
-                    number > 999999
-                        ? "compact"
-                        : "standard",
-                maximumFractionDigits:
-                    1
-            }
-        ).format(
-            number
-        );
+        return new Intl.NumberFormat("en-US", {
+            notation:
+                number > 999999
+                    ? "compact"
+                    : "standard",
+            maximumFractionDigits: 1
+        }).format(number);
     };
 
-    const hashString = (
-        value
-    ) => {
-        let hash =
-            2166136261;
+    function sentence(parts) {
+        return parts
+            .filter(Boolean)
+            .map(part =>
+                String(part)
+                    .replace(/\s+/g, " ")
+                    .trim()
+            )
+            .filter(Boolean)
+            .join(" ")
+            .trim();
+    }
 
-        const text =
-            String(
-                value ?? ""
+    function articleFor(value) {
+        const word = safe(value, "unknown");
+
+        return /^[aeiou]/i.test(word)
+            ? "an"
+            : "a";
+    }
+
+    function lowerFirst(value) {
+        const text = safe(value, "");
+
+        if (!text) {
+            return "";
+        }
+
+        return (
+            text.charAt(0).toLowerCase() +
+            text.slice(1)
+        );
+    }
+
+    function cleanPhrase(value) {
+        return safe(value, "")
+            .replace(
+                /\b(a|an)\s+(incident|airship|unusual|unexpected|urgent|emergency)\b/gi,
+                (match, article, word) =>
+                    `${article.toLowerCase() === "a" && /^[aeiou]/i.test(word)
+                        ? "an"
+                        : article
+                    } ${word}`
             );
+    }
+
+    /* ========================================================
+       HASH / IDS
+       ======================================================== */
+
+    const hashString = value => {
+        let hash = 2166136261;
+
+        const text = String(value ?? "");
 
         for (
             let i = 0;
             i < text.length;
             i++
         ) {
-            hash ^=
-                text.charCodeAt(i);
+            hash ^= text.charCodeAt(i);
 
             hash +=
-                (
-                    hash << 1
-                ) +
-                (
-                    hash << 4
-                ) +
-                (
-                    hash << 7
-                ) +
-                (
-                    hash << 8
-                ) +
-                (
-                    hash << 24
-                );
+                (hash << 1) +
+                (hash << 4) +
+                (hash << 7) +
+                (hash << 8) +
+                (hash << 24);
         }
 
         return Math.abs(
@@ -398,72 +360,119 @@
 
     const randomId = () => {
         return [
-            Date.now()
-                .toString(36),
-
-            integer(
-                100000,
-                999999
-            ).toString(36),
-
-            integer(
-                100000,
-                999999
-            ).toString(36)
+            Date.now().toString(36),
+            integer(100000, 999999).toString(36),
+            integer(100000, 999999).toString(36)
         ].join("-");
     };
 
     /* ========================================================
-       DISPLAY HELPERS
+       DATE HELPERS
        ======================================================== */
-
-    function sentence(
-        parts
-    ) {
-        return parts
-            .filter(Boolean)
-            .join(" ")
-            .replace(
-                /\s+/g,
-                " "
-            )
-            .trim();
-    }
 
     function randomDateLabel(
         minYear = 2012,
-        maxYear = new Date()
-            .getFullYear() + 3
+        maxYear = new Date().getFullYear()
     ) {
-        const year =
-            integer(
-                minYear,
-                maxYear
-            );
+        const year = integer(
+            minYear,
+            maxYear
+        );
 
-        const month =
-            String(
-                integer(
-                    1,
-                    12
-                )
-            ).padStart(
-                2,
-                "0"
-            );
+        const month = String(
+            integer(1, 12)
+        ).padStart(2, "0");
 
-        const day =
-            String(
-                integer(
-                    1,
-                    28
-                )
-            ).padStart(
-                2,
-                "0"
-            );
+        const day = String(
+            integer(1, 28)
+        ).padStart(2, "0");
 
         return `${year}-${month}-${day}`;
+    }
+
+    function dateParts(year) {
+        return `${year}-${String(
+            integer(1, 12)
+        ).padStart(2, "0")}-${String(
+            integer(1, 28)
+        ).padStart(2, "0")}`;
+    }
+
+    function orderedArchiveDates(years) {
+        const currentYear =
+            new Date().getFullYear();
+
+        const minimumYear = Math.max(
+            2012,
+            currentYear - Math.max(years, 1)
+        );
+
+        let createdYear = integer(
+            minimumYear,
+            currentYear
+        );
+
+        let updatedYear = integer(
+            createdYear,
+            currentYear
+        );
+
+        let created = dateParts(
+            createdYear
+        );
+
+        let updated = dateParts(
+            updatedYear
+        );
+
+        if (updated < created) {
+            updatedYear = createdYear;
+
+            const createdMonth = integer(
+                1,
+                12
+            );
+
+            const createdDay = integer(
+                1,
+                28
+            );
+
+            const updatedMonth = integer(
+                createdMonth,
+                12
+            );
+
+            const updatedDay =
+                updatedMonth === createdMonth
+                    ? integer(
+                        createdDay,
+                        28
+                    )
+                    : integer(
+                        1,
+                        28
+                    );
+
+            created =
+                `${createdYear}-${String(
+                    createdMonth
+                ).padStart(2, "0")}-${String(
+                    createdDay
+                ).padStart(2, "0")}`;
+
+            updated =
+                `${updatedYear}-${String(
+                    updatedMonth
+                ).padStart(2, "0")}-${String(
+                    updatedDay
+                ).padStart(2, "0")}`;
+        }
+
+        return {
+            created,
+            lastUpdated: updated
+        };
     }
 
     function randomCode() {
@@ -479,29 +488,87 @@
                 "VOID",
                 "ERR",
                 "SEC"
-            ]),
-            integer(
-                10,
-                99
-            ),
+            ]) || "ARC",
+            integer(10, 99),
             "-",
-            integer(
-                100,
-                999
-            )
+            integer(100, 999)
         ].join("");
     }
 
-    function uniqueStrings(
-        values
-    ) {
+    function uniqueStrings(values) {
         return [
             ...new Set(
-                safeArray(
-                    values
-                )
+                safeArray(values)
             )
         ];
+    }
+
+    /* ========================================================
+       UI CONFIG FALLBACKS
+       ======================================================== */
+
+    const DEFAULT_UI_FAMILIES = [
+        "executive",
+        "terminal",
+        "rpg",
+        "manhwa",
+        "dossier",
+        "research",
+        "luxury",
+        "brutalist",
+        "space",
+        "detective",
+        "spellbook",
+        "underground",
+        "newspaper",
+        "operating-system",
+        "chaotic"
+    ];
+
+    const DEFAULT_LAYOUTS = [
+        "asymmetric",
+        "editorial",
+        "command",
+        "character-sheet",
+        "case-file",
+        "dashboard",
+        "split-screen",
+        "stacked",
+        "magazine",
+        "terminal-grid",
+        "mission-control",
+        "dense-grid"
+    ];
+
+    const DEFAULT_NAVS = [
+        "top",
+        "rail",
+        "floating",
+        "command",
+        "minimal",
+        "drawer"
+    ];
+
+    const DEFAULT_HERO_MODES = [
+        "identity",
+        "mission",
+        "profile",
+        "case",
+        "status",
+        "command",
+        "character",
+        "manifesto",
+        "classified",
+        "field-report"
+    ];
+
+    function uiPool(name, fallback) {
+        const configured = CONFIG[name];
+
+        return Array.isArray(configured) &&
+            configured.length
+            ? configured
+            : fallback;
     }
 
     /* ========================================================
@@ -509,141 +576,130 @@
        ======================================================== */
 
     function generateWorld() {
+        const seeds = pool(
+            "generated_world_seeds"
+        );
+
         const seed =
-            pick(
-                CONFIG.generated_world_seeds
-            ) || {};
+            pick(seeds) || {};
 
-        const extraRules =
-            sample(
-                CONFIG.world_rules,
-                integer(
-                    2,
-                    5
-                )
-            );
+        const extraRules = sample(
+            pool("world_rules"),
+            integer(2, 5)
+        );
 
-        const factions =
-            sample(
-                CONFIG.factions,
-                integer(
-                    3,
-                    6
+        const factionPool =
+            pool("factions");
+
+        const factions = sample(
+            factionPool,
+            integer(
+                3,
+                Math.min(
+                    6,
+                    Math.max(
+                        3,
+                        factionPool.length
+                    )
                 )
-            );
+            )
+        );
 
         const conflict =
-            pick(
-                CONFIG.world_conflicts
+            firstPoolValue(
+                "world_conflicts",
+                "Several organizations are attempting to solve the same problem differently."
             );
 
         const world = {
-            id:
-                randomId(),
+            id: randomId(),
 
-            name:
-                safe(
-                    seed.name,
-                    "Unnamed World"
-                ),
+            name: safe(
+                seed.name,
+                "Unnamed World"
+            ),
 
-            genre:
-                safe(
-                    seed.genre,
-                    "speculative fiction"
-                ),
+            genre: safe(
+                seed.genre,
+                "speculative fiction"
+            ),
 
-            description:
-                safe(
-                    seed.description,
-                    "A world whose infrastructure has become considerably stranger than its original documentation."
-                ),
+            description: safe(
+                seed.description,
+                "A world whose infrastructure has become considerably stranger than its original documentation."
+            ),
 
-            sky:
-                safe(
-                    seed.sky,
-                    "an unusually quiet sky"
-                ),
+            sky: safe(
+                seed.sky,
+                "an unusually quiet sky"
+            ),
 
-            technology:
-                safe(
-                    seed.technology,
-                    "mixed legacy and experimental systems"
-                ),
+            technology: safe(
+                seed.technology,
+                "mixed legacy and experimental systems"
+            ),
 
-            socialRule:
-                safe(
-                    seed.social_rule,
-                    "Nobody agrees on who owns the infrastructure."
-                ),
+            socialRule: safe(
+                seed.social_rule,
+                "Nobody agrees on who owns the infrastructure."
+            ),
 
-            danger:
-                safe(
-                    seed.danger,
-                    "unknown"
-                ),
+            danger: safe(
+                seed.danger,
+                "unknown"
+            ),
 
-            rule:
-                safe(
-                    seed.rule,
-                    "Assume the documentation is incomplete."
-                ),
+            rule: safe(
+                seed.rule,
+                "Assume the documentation is incomplete."
+            ),
 
-            rules:
-                uniqueStrings([
-                    seed.social_rule,
-                    seed.rule,
-                    ...extraRules
-                ]),
+            rules: uniqueStrings([
+                seed.social_rule,
+                seed.rule,
+                ...extraRules
+            ]),
 
-            conflict:
-                safe(
-                    conflict,
-                    "Several organizations are attempting to solve the same problem differently."
-                ),
+            conflict: safe(
+                conflict,
+                "Several organizations are attempting to solve the same problem differently."
+            ),
 
-            factions:
-                uniqueStrings(
-                    factions
-                ),
+            factions: uniqueStrings(
+                factions
+            ),
 
-            population:
-                integer(
-                    9000,
-                    890000000
-                ),
+            population: integer(
+                9000,
+                890000000
+            ),
 
-            age:
-                integer(
-                    17,
-                    12000
-                ),
+            age: integer(
+                17,
+                12000
+            ),
 
-            stability:
-                integer(
-                    9,
-                    97
-                ),
+            stability: integer(
+                9,
+                97
+            ),
 
-            classification:
-                pick([
-                    "PUBLIC",
-                    "RESTRICTED",
-                    "CLASSIFIED",
-                    "ARCHIVED",
-                    "UNSTABLE",
-                    "OBSERVATION ONLY"
-                ])
+            classification: pick([
+                "PUBLIC",
+                "RESTRICTED",
+                "CLASSIFIED",
+                "ARCHIVED",
+                "UNSTABLE",
+                "OBSERVATION ONLY"
+            ]) || "PUBLIC"
         };
 
-        if (
-            !world.factions.length
-        ) {
+        if (!world.factions.length) {
             world.factions = [
-                pick(
-                    CONFIG.factions
-                ) ||
-                "Independent Operators"
+                firstPoolValue(
+                    "factions",
+                    "Independent Operators"
+                )
             ];
         }
 
@@ -656,130 +712,172 @@
     }
 
     /* ========================================================
-       NPC GENERATION
+       NPC NAME GENERATION
        ======================================================== */
+
+    function generateFallbackNPCName(
+        usedNames
+    ) {
+        const firstNames = pool(
+            "npc_first_names",
+            pool("names")
+        );
+
+        const lastNames = pool(
+            "npc_last_names",
+            pool("names")
+        );
+
+        for (let attempt = 0; attempt < 100; attempt++) {
+            const first =
+                pick(firstNames) ||
+                pick(pool("names")) ||
+                "Unknown";
+
+            const last =
+                pick(lastNames) ||
+                pick(pool("names")) ||
+                "Contact";
+
+            const name =
+                `${safe(first)} ${safe(last)}`;
+
+            if (!usedNames.has(name)) {
+                return name;
+            }
+        }
+
+        let index = usedNames.size + 1;
+
+        let name =
+            `Unknown Contact ${index}`;
+
+        while (usedNames.has(name)) {
+            index += 1;
+            name =
+                `Unknown Contact ${index}`;
+        }
+
+        return name;
+    }
 
     function generateNPC(
         world,
         faction,
         usedNames
     ) {
-        const availableSeeds =
-            safeArray(
-                CONFIG.generated_npc_seeds
-            )
-                .map(
-                    (_, index) =>
-                        CONFIG
-                            .generated_npc_seeds[
-                                index
-                            ]
-                )
-                .filter(
-                    seed => {
-                        const name =
-                            safe(
-                                seed?.name,
-                                ""
-                            );
-
-                        return (
-                            name &&
-                            !usedNames.has(
-                                name
-                            )
-                        );
-                    }
-                );
-
-        let seed =
-            pick(
-                availableSeeds
-            );
-
-        if (!seed) {
-            seed =
-                pick(
-                    CONFIG.generated_npc_seeds
-                ) || {};
-        }
-
-        const name =
-            safe(
-                seed.name ||
-                `${seed.first || ""} ${seed.last || ""}`,
-                "Unknown Contact"
-            );
-
-        usedNames.add(
-            name
+        const seeds = pool(
+            "generated_npc_seeds"
         );
 
-        const dialogue =
-            safe(
-                seed.dialogue,
-                pick(
-                    CONFIG.npc_dialogue
-                ) ||
-                "You keep calling it a bug. I call it evidence."
-            );
+        const unusedSeeds = seeds.filter(
+            seed => {
+                const name =
+                    safe(
+                        seed?.name,
+                        ""
+                    );
 
-        const secret =
-            safe(
-                seed.secret,
-                pick(
-                    CONFIG.npc_secrets
-                ) ||
-                "Knows something nobody has successfully documented."
-            );
+                return (
+                    name &&
+                    !usedNames.has(name)
+                );
+            }
+        );
 
-        const relationship =
-            safe(
-                seed.relationship,
-                pick(
-                    CONFIG.npc_relationships
-                ) ||
+        const seed =
+            pick(unusedSeeds) ||
+            {};
+
+        let name = safe(
+            seed.name,
+            ""
+        );
+
+        if (!name) {
+            name =
+                generateFallbackNPCName(
+                    usedNames
+                );
+        }
+
+        if (usedNames.has(name)) {
+            name =
+                generateFallbackNPCName(
+                    usedNames
+                );
+        }
+
+        usedNames.add(name);
+
+        const role = safe(
+            seed.role,
+            firstPoolValue(
+                "npc_roles",
+                "unregistered specialist"
+            )
+        );
+
+        const type = safe(
+            seed.type,
+            firstPoolValue(
+                "npc_types",
+                "unknown entity"
+            )
+        );
+
+        const trait = safe(
+            seed.trait,
+            firstPoolValue(
+                "npc_traits",
+                "suspiciously competent"
+            )
+        );
+
+        const relationship = safe(
+            seed.relationship,
+            firstPoolValue(
+                "npc_relationships",
                 "professional contact"
-            );
+            )
+        );
+
+        const secret = safe(
+            seed.secret,
+            firstPoolValue(
+                "npc_secrets",
+                "Knows something nobody has successfully documented."
+            )
+        );
+
+        const dialogue = safe(
+            seed.dialogue,
+            firstPoolValue(
+                "npc_dialogue",
+                "You keep calling it a bug. I call it evidence."
+            )
+        );
 
         const npc = {
-            id:
-                randomId(),
+            id: randomId(),
 
             name,
 
-            first:
-                safe(
-                    seed.first,
-                    name.split(" ")[0]
-                ),
+            first: safe(
+                seed.first,
+                name.split(" ")[0]
+            ),
 
-            last:
-                safe(
-                    seed.last,
-                    name.split(" ").slice(1).join(" ")
-                ),
+            last: safe(
+                seed.last,
+                name.split(" ").slice(1).join(" ")
+            ),
 
-            role:
-                safe(
-                    seed.role,
-                    "unregistered specialist"
-                ),
+            role,
 
-            type:
-                safe(
-                    seed.type,
-                    "unknown entity"
-                ),
+            type,
 
-            trait:
-                safe(
-                    seed.trait,
-                    pick(
-                        CONFIG.npc_traits
-                    ) ||
-                    "suspiciously competent"
-                ),
+            trait,
 
             relationship,
 
@@ -787,68 +885,63 @@
 
             dialogue,
 
-            status:
-                safe(
-                    seed.status,
-                    pick(
-                        CONFIG.statuses
-                    ) ||
+            status: safe(
+                seed.status,
+                firstPoolValue(
+                    "statuses",
                     "UNKNOWN"
+                )
+            ),
+
+            faction: safe(
+                seed.faction,
+                faction
+            ),
+
+            world: world.name,
+
+            location: safe(
+                pick(
+                    pool("locations")
                 ),
+                world.name
+            ),
 
-            faction:
-                safe(
-                    seed.faction,
-                    faction
-                ),
+            reputation: integer(
+                4,
+                99
+            ),
 
-            world:
-                world.name,
-
-            location:
-                safe(
-                    pick(
-                        CONFIG.locations
-                    ),
-                    world.name
-                ),
-
-            reputation:
-                integer(
-                    4,
-                    99
-                ),
-
-            danger:
-                safe(
-                    seed.risk,
-                    pick(
-                        CONFIG.risk_levels
-                    ) ||
+            danger: safe(
+                seed.risk,
+                firstPoolValue(
+                    "risk_levels",
                     "UNDEFINED"
-                ),
+                )
+            ),
 
-            age:
-                integer(
-                    17,
-                    900
-                ),
+            age: integer(
+                17,
+                900
+            ),
 
-            encounters:
-                integer(
-                    1,
-                    38
-                ),
+            encounters: integer(
+                1,
+                38
+            ),
 
             biography:
                 buildNPCBiography(
                     seed,
-                    world
+                    world,
+                    role,
+                    type,
+                    trait,
+                    secret
                 ),
 
             rumors:
                 buildNPCRumors(
-                    seed,
                     world
                 )
         };
@@ -863,85 +956,43 @@
 
     function buildNPCBiography(
         seed,
-        world
+        world,
+        role,
+        type,
+        trait,
+        secret
     ) {
-        const first =
-            safe(
-                seed.first,
-                "Unknown"
-            );
-
-        const role =
-            safe(
-                seed.role,
-                "unregistered specialist"
-            );
-
-        const type =
-            safe(
-                seed.type,
-                "unknown entity"
-            );
-
-        const trait =
-            safe(
-                seed.trait,
-                pick(
-                    CONFIG.npc_traits
-                ) ||
-                "quietly suspicious"
-            );
-
-        const secret =
-            safe(
-                seed.secret,
-                pick(
-                    CONFIG.npc_secrets
-                ) ||
-                "knows more than the official record suggests"
-            );
+        const first = safe(
+            seed.first,
+            "Unknown"
+        );
 
         return sentence([
-            `${first} is a ${type} known in ${world.name} as a ${role}.`,
+            `${first} is ${articleFor(type)} ${type} known in ${world.name} as a ${role}.`,
             `Most records describe them as ${trait}.`,
-            `Their involvement with the portfolio owner began after a routine professional interaction became considerably less routine.`,
+            "Their involvement with the portfolio owner began after a routine professional interaction became considerably less routine.",
             `${capitalize(secret)}.`,
             `No reliable source agrees on what they were doing before arriving in ${world.name}.`
         ]);
     }
 
-    function buildNPCRumors(
-        seed,
-        world
-    ) {
+    function buildNPCRumors(world) {
         const rumors = [
             `Claims to have worked inside ${world.name} before it had its current name.`,
-
             "Was allegedly present during an incident that officially never happened.",
-
             "Keeps a private copy of an architecture diagram nobody else has seen.",
-
             "Has reportedly met the portfolio owner in another timeline.",
-
             "Refuses to explain why their access badge works in restricted locations.",
-
             "Once solved an infrastructure problem by asking the server a question.",
-
             "May have changed factions without informing anyone.",
-
             "Appears in historical records several decades earlier than expected.",
-
             "Insists that the most dangerous system in the world is a perfectly ordinary spreadsheet.",
-
             "Has never been photographed clearly."
         ];
 
         return sample(
             rumors,
-            integer(
-                2,
-                4
-            )
+            integer(2, 4)
         );
     }
 
@@ -956,125 +1007,113 @@
     ) {
         const seed =
             pick(
-                CONFIG.generated_experience_seeds
+                pool(
+                    "generated_experience_seeds"
+                )
             ) || {};
 
-        const role =
-            safe(
-                seed.role,
-                pick(
-                    CONFIG.experience_roles
-                ) ||
+        const role = safe(
+            seed.role,
+            firstPoolValue(
+                "experience_roles",
                 "Systems Engineer"
-            );
+            )
+        );
 
-        const opening =
-            safe(
-                seed.opening,
-                pick(
-                    CONFIG.experience_openings
-                ) ||
+        const opening = safe(
+            seed.opening,
+            firstPoolValue(
+                "experience_openings",
                 "The assignment looked ordinary from a distance."
-            );
+            )
+        );
 
-        const hook =
-            safe(
-                seed.hook,
-                pick(
-                    CONFIG.story_hooks
-                ) ||
+        const hook = safe(
+            seed.hook,
+            firstPoolValue(
+                "story_hooks",
                 "The first investigation revealed that the original assumptions were incomplete."
-            );
+            )
+        );
 
-        const incident =
+        const incident = cleanPhrase(
             safe(
                 seed.incident,
-                pick(
-                    CONFIG.experience_incidents
-                ) ||
-                "a routine operation produced an unexpected system state"
-            );
+                firstPoolValue(
+                    "experience_incidents",
+                    "an unexpected system state appeared during routine operation"
+                )
+            )
+        );
 
-        const turn =
-            safe(
-                seed.turn,
-                pick(
-                    CONFIG.story_turns
-                ) ||
+        const turn = safe(
+            seed.turn,
+            firstPoolValue(
+                "story_turns",
                 "The investigation moved from symptoms toward system history."
-            );
+            )
+        );
 
-        const lesson =
-            safe(
-                seed.lesson,
-                pick(
-                    CONFIG.experience_lessons
-                ) ||
+        const lesson = safe(
+            seed.lesson,
+            firstPoolValue(
+                "experience_lessons",
                 "Reliable systems require clear assumptions, observable behavior and recovery paths."
-            );
+            )
+        );
 
-        const closing =
-            safe(
-                seed.closing,
-                pick(
-                    CONFIG.closing_lines
-                ) ||
+        const closing = safe(
+            seed.closing,
+            firstPoolValue(
+                "closing_lines",
                 "The system eventually became boring enough to trust."
-            );
+            )
+        );
+
+        const technologyPool =
+            specialties.length
+                ? specialties
+                : pool(
+                    "specialties",
+                    ["systems engineering"]
+                );
 
         const technologies =
             sample(
-                specialties,
-                Math.min(
-                    specialties.length,
-                    integer(
-                        3,
-                        Math.min(
-                            7,
-                            Math.max(
-                                3,
-                                specialties.length
-                            )
-                        )
-                    )
+                technologyPool,
+                clamp(
+                    integer(4, 7),
+                    1,
+                    technologyPool.length
                 )
             );
 
-        const experience = {
-            id:
-                randomId(),
+        return {
+            id: randomId(),
 
-            organization:
-                safe(
-                    seed.organization,
-                    faction
-                ),
+            organization: safe(
+                seed.organization,
+                faction
+            ),
 
-            world:
-                safe(
-                    seed.world,
-                    world.name
-                ),
+            world: safe(
+                seed.world,
+                world.name
+            ),
 
             role,
 
             years:
-                Number(
-                    seed.years
-                ) ||
-                integer(
-                    1,
-                    9
-                ),
+                Number(seed.years) ||
+                integer(1, 9),
 
-            status:
-                safe(
-                    seed.status,
-                    pick(
-                        CONFIG.statuses
-                    ) ||
+            status: safe(
+                seed.status,
+                firstPoolValue(
+                    "statuses",
                     "ACTIVE"
-                ),
+                )
+            ),
 
             technologies,
 
@@ -1112,15 +1151,10 @@
 
             incidents:
                 sample(
-                    CONFIG.incident_types,
-                    integer(
-                        2,
-                        4
-                    )
+                    pool("incident_types"),
+                    integer(2, 4)
                 )
         };
-
-        return experience;
     }
 
     function buildExperienceNarrative({
@@ -1137,42 +1171,35 @@
     }) {
         const technologyText =
             technologies.length
-                ? technologies.join(
-                    ", "
-                )
+                ? technologies.join(", ")
                 : "systems engineering";
 
         return {
-            summary:
-                sentence([
-                    opening,
-                    `The official role was ${role}.`,
-                    `The actual assignment involved keeping infrastructure belonging to ${faction} operational inside ${world.name}.`
-                ]),
+            summary: sentence([
+                opening,
+                `The official role was ${role}.`,
+                `The actual assignment involved keeping infrastructure belonging to ${faction} operational inside ${world.name}.`
+            ]),
 
-            context:
-                sentence([
-                    hook,
-                    `The work initially appeared to be conventional ${technologyText}.`
-                ]),
+            context: sentence([
+                hook,
+                `The work initially appeared to be conventional ${technologyText}.`
+            ]),
 
-            incident:
-                sentence([
-                    incident,
-                    "Nobody could initially agree whether the problem was technical, operational or administrative."
-                ]),
+            incident: sentence([
+                `During the assignment, ${lowerFirst(incident)}.`,
+                "Nobody could initially agree whether the problem was technical, operational or administrative."
+            ]),
 
-            response:
-                sentence([
-                    turn,
-                    `The response combined ${technologyText}, explicit boundaries, observability, recovery procedures and documentation.`
-                ]),
+            response: sentence([
+                turn,
+                `The response combined ${technologyText}, explicit boundaries, observability, recovery procedures and documentation.`
+            ]),
 
-            lesson:
-                sentence([
-                    lesson,
-                    closing
-                ])
+            lesson: sentence([
+                lesson,
+                closing
+            ])
         };
     }
 
@@ -1182,32 +1209,20 @@
     ) {
         const achievements = [
             `Stabilized a ${world.name} production environment without shutting it down.`,
-
             "Documented an undocumented dependency that had become operationally critical.",
-
             "Introduced measurable monitoring to a system previously maintained through intuition.",
-
             "Reduced repeated incidents by replacing manual intervention with automation.",
-
             "Created a recovery procedure that eventually became standard practice.",
-
             "Translated contradictory requirements into a working technical boundary.",
-
             "Recovered historical information necessary to understand the current architecture.",
-
             "Established an incident trail that allowed future engineers to reconstruct what happened.",
-
             "Removed unnecessary dependencies and accidentally made the system more reliable.",
-
             "Explained the same technical problem to engineers, administrators and a person wearing a crown."
         ];
 
         return sample(
             achievements,
-            integer(
-                3,
-                6
-            )
+            integer(3, 6)
         ).map(
             achievement =>
                 `${role}: ${achievement}`
@@ -1222,11 +1237,14 @@
         world,
         industry,
         specialties,
-        npcs
+        npcs,
+        projectNumber
     ) {
         const seed =
             pick(
-                CONFIG.generated_project_seeds
+                pool(
+                    "generated_project_seeds"
+                )
             ) || {};
 
         const suffix =
@@ -1245,92 +1263,110 @@
                 "Network",
                 "Matrix",
                 "System"
-            ]);
+            ]) || "System";
 
-        const name =
-            `${safe(
+        const baseName =
+            safe(
                 seed.name,
                 "Unnamed"
-            )} ${suffix}`;
+            );
+
+        const name =
+            `${baseName} ${suffix}`;
 
         const skills =
             sample(
-                specialties,
-                Math.min(
-                    specialties.length,
-                    integer(
-                        3,
-                        6
+                specialties.length
+                    ? specialties
+                    : pool(
+                        "specialties",
+                        ["engineering"]
+                    ),
+                clamp(
+                    integer(3, 7),
+                    1,
+                    Math.max(
+                        1,
+                        specialties.length
                     )
                 )
             );
 
         const problem =
-            safe(
-                seed.problem,
-                pick(
-                    CONFIG.project_problems
-                ) ||
-                "the existing system had accumulated too many undocumented assumptions"
+            cleanPhrase(
+                safe(
+                    seed.problem,
+                    firstPoolValue(
+                        "project_problems",
+                        "the existing system had accumulated too many undocumented assumptions"
+                    )
+                )
             );
 
         const solution =
-            safe(
-                seed.solution,
-                pick(
-                    CONFIG.project_solutions
-                ) ||
-                "introduce explicit boundaries, observability and automated recovery"
+            cleanPhrase(
+                safe(
+                    seed.solution,
+                    firstPoolValue(
+                        "project_solutions",
+                        "introduce explicit boundaries, observability and automated recovery"
+                    )
+                )
             );
 
         const failure =
-            safe(
-                seed.failure,
-                pick(
-                    CONFIG.project_failures
-                ) ||
-                "a routine deployment exposed a previously unknown dependency"
+            cleanPhrase(
+                safe(
+                    seed.failure,
+                    firstPoolValue(
+                        "project_failures",
+                        "a routine deployment exposed a previously unknown dependency"
+                    )
+                )
             );
 
         const outcome =
-            safe(
-                seed.outcome,
-                pick(
-                    CONFIG.project_outcomes
-                ) ||
-                "the system became stable enough for ordinary disasters"
+            cleanPhrase(
+                safe(
+                    seed.outcome,
+                    firstPoolValue(
+                        "project_outcomes",
+                        "the system became stable enough for ordinary disasters"
+                    )
             );
 
         const client =
             npcs.length
-                ? pick(
-                    npcs
-                )
+                ? pick(npcs)
                 : null;
 
+        const type = safe(
+            seed.type,
+            firstPoolValue(
+                "project_types",
+                "infrastructure project"
+            )
+        );
+
         const project = {
-            id:
-                randomId(),
+            id: randomId(),
+
+            number:
+                projectNumber,
 
             name,
 
-            type:
-                safe(
-                    seed.type,
-                    "infrastructure project"
-                ),
+            type,
 
-            industry:
-                safe(
-                    seed.industry,
-                    industry
-                ),
+            industry: safe(
+                seed.industry,
+                industry
+            ),
 
-            world:
-                safe(
-                    seed.world,
-                    world.name
-                ),
+            world: safe(
+                seed.world,
+                world.name
+            ),
 
             skills,
 
@@ -1357,33 +1393,22 @@
                     "Classified",
                     "Operational",
                     "Partially Operational"
-                ]),
+                ]) ||
+                "Operational",
 
             complexity:
-                integer(
-                    21,
-                    99
-                ),
+                integer(21, 99),
 
             users:
-                integer(
-                    100,
-                    850000
-                ),
+                integer(100, 850000),
 
             duration:
-                integer(
-                    2,
-                    48
-                ),
+                integer(2, 48),
 
             narrative:
                 buildProjectNarrative({
                     name,
-                    type: safe(
-                        seed.type,
-                        "infrastructure project"
-                    ),
+                    type,
                     world,
                     industry,
                     problem,
@@ -1397,10 +1422,7 @@
             technicalNotes:
                 buildTechnicalNotes(
                     skills,
-                    safe(
-                        seed.type,
-                        "infrastructure project"
-                    )
+                    type
                 )
         };
 
@@ -1428,46 +1450,39 @@
                 : "an unnamed client";
 
         return {
-            summary:
-                sentence([
-                    `PROJECT ${name} was commissioned as a ${type} for ${industry}.`,
-                    `It eventually became useful infrastructure inside ${world.name}.`
-                ]),
+            summary: sentence([
+                `PROJECT ${name} was commissioned as ${articleFor(type)} ${type} for ${industry}.`,
+                `It eventually became useful infrastructure inside ${world.name}.`
+            ]),
 
-            problem:
-                sentence([
-                    "The initial requirement sounded simple.",
-                    `The project existed because ${problem}.`
-                ]),
+            problem: sentence([
+                "The initial requirement sounded simple.",
+                `The project existed because ${lowerFirst(problem)}.`
+            ]),
 
-            architecture:
-                sentence([
-                    "The architecture favored clear interfaces, observable state, recoverable failures and explicit ownership.",
-                    `The implementation centered around ${skills.join(", ")}.`
-                ]),
+            architecture: sentence([
+                "The architecture favored clear interfaces, observable state, recoverable failures and explicit ownership.",
+                `The implementation centered around ${skills.join(", ")}.`
+            ]),
 
-            client:
-                sentence([
-                    `The primary requester was ${clientName}.`,
-                    "Their most important requirement was not written in the original specification."
-                ]),
+            client: sentence([
+                `The primary requester was ${clientName}.`,
+                "Their most important requirement was not written in the original specification."
+            ]),
 
-            failure:
-                sentence([
-                    `That hidden requirement surfaced when ${failure}.`
-                ]),
+            failure: sentence([
+                `That hidden requirement surfaced when ${lowerFirst(failure)}.`
+            ]),
 
-            solution:
-                sentence([
-                    `The response was to ${solution}.`,
-                    "This reduced unknown failure modes and made the system easier to reason about."
-                ]),
+            solution: sentence([
+                `The response was to ${lowerFirst(solution)}.`,
+                "This reduced unknown failure modes and made the system easier to reason about."
+            ]),
 
-            outcome:
-                sentence([
-                    `The project eventually reached a state where ${outcome}.`,
-                    "The final lesson was that good infrastructure does not prevent strange events; it makes them easier to survive."
-                ])
+            outcome: sentence([
+                `The project eventually reached a state where ${lowerFirst(outcome)}.`,
+                "The final lesson was that good infrastructure does not prevent strange events; it makes them easier to survive."
+            ])
         };
     }
 
@@ -1477,24 +1492,16 @@
     ) {
         const notes = [
             `Architecture: modular ${type}`,
-
             `Primary stack: ${skills.slice(0, 3).join(", ")}`,
-
             "Failure strategy: observable, recoverable, documented",
-
             "Deployment model: automated where practical",
-
             "Operational philosophy: boring infrastructure, interesting outcomes",
-
             "Maintenance requirement: someone must understand why each component exists"
         ];
 
         return sample(
             notes,
-            integer(
-                4,
-                6
-            )
+            integer(4, 6)
         );
     }
 
@@ -1509,80 +1516,79 @@
     ) {
         const seed =
             pick(
-                CONFIG.generated_incident_seeds
+                pool(
+                    "generated_incident_seeds"
+                )
             ) || {};
 
         const witness =
             npcs.length
-                ? pick(
-                    npcs
-                )
+                ? pick(npcs)
                 : null;
 
         const project =
             projects.length
-                ? pick(
-                    projects
-                )
+                ? pick(projects)
                 : null;
 
-        const incident = {
-            id:
-                randomId(),
+        const type = safe(
+            seed.type,
+            firstPoolValue(
+                "incident_types",
+                "unknown production event"
+            )
+        );
 
-            code:
-                randomCode(),
+        const opener = safe(
+            seed.opener,
+            firstPoolValue(
+                "incident_openers",
+                "Without warning"
+            )
+        );
 
-            world:
-                safe(
-                    seed.world,
-                    world.name
-                ),
-
-            type:
-                safe(
-                    seed.type,
-                    pick(
-                        CONFIG.incident_types
-                    ) ||
-                    "unknown production event"
-                ),
-
-            opener:
-                safe(
-                    seed.opener,
-                    pick(
-                        CONFIG.incident_openers
-                    ) ||
-                    "Without warning"
-                ),
-
-            consequence:
+        const consequence =
+            cleanPhrase(
                 safe(
                     seed.consequence,
-                    pick(
-                        CONFIG.incident_consequences
-                    ) ||
-                    "the system entered an unexpected state"
-                ),
+                    firstPoolValue(
+                        "incident_consequences",
+                        "the system entered an unexpected state"
+                    )
+                )
+            );
 
-            risk:
-                safe(
-                    seed.risk,
-                    pick(
-                        CONFIG.risk_levels
-                    ) ||
+        const incident = {
+            id: randomId(),
+
+            code: randomCode(),
+
+            world: safe(
+                seed.world,
+                world.name
+            ),
+
+            type,
+
+            opener,
+
+            consequence,
+
+            risk: safe(
+                seed.risk,
+                firstPoolValue(
+                    "risk_levels",
                     "UNDEFINED"
-                ),
+                )
+            ),
 
-            status:
-                safe(
-                    seed.status,
-                    pick(
-                        CONFIG.statuses
-                    ) ||
+            status: safe(
+                seed.status,
+                firstPoolValue(
+                    "statuses",
                     "UNDER INVESTIGATION"
-                ),
+                )
+            ),
 
             witness:
                 witness
@@ -1594,13 +1600,14 @@
                     ? project.name
                     : "Unassigned",
 
-            date:
-                randomDateLabel(),
+            date: randomDateLabel(),
 
             narrative:
                 buildIncidentNarrative({
                     world,
-                    seed,
+                    type,
+                    opener,
+                    consequence,
                     witness,
                     project
                 })
@@ -1611,28 +1618,12 @@
 
     function buildIncidentNarrative({
         world,
-        seed,
+        type,
+        opener,
+        consequence,
         witness,
         project
     }) {
-        const type =
-            safe(
-                seed.type,
-                "unknown production event"
-            );
-
-        const opener =
-            safe(
-                seed.opener,
-                "Without warning"
-            );
-
-        const consequence =
-            safe(
-                seed.consequence,
-                "the environment entered an unexpected state"
-            );
-
         const witnessText =
             witness
                 ? `${witness.name}, a ${witness.role},`
@@ -1644,23 +1635,20 @@
                 : "No project was officially associated with the event.";
 
         return {
-            summary:
-                sentence([
-                    opener,
-                    `an incident classified as ${type} occurred in ${world.name}.`,
-                    projectText
-                ]),
+            summary: sentence([
+                opener,
+                `an incident classified as ${type} occurred in ${world.name}.`,
+                projectText
+            ]),
 
-            observation:
-                sentence([
-                    witnessText,
-                    "reported that the environment behaved differently from every previous observation."
-                ]),
+            observation: sentence([
+                witnessText,
+                "reported that the environment behaved differently from every previous observation."
+            ]),
 
-            consequence:
-                sentence([
-                    `The immediate consequence was that ${consequence}.`
-                ]),
+            consequence: sentence([
+                `The immediate consequence was that ${lowerFirst(consequence)}.`
+            ]),
 
             response:
                 "The incident remained open until the evidence was documented clearly enough for another engineer to reproduce the conditions.",
@@ -1681,42 +1669,39 @@
     ) {
         const seed =
             pick(
-                CONFIG.generated_quest_seeds
+                pool(
+                    "generated_quest_seeds"
+                )
             ) || {};
 
         const client =
             npcs.length
-                ? pick(
-                    npcs
-                )
+                ? pick(npcs)
                 : null;
 
-        const objective =
-            safe(
-                seed.objective,
-                pick(
-                    CONFIG.quests
-                ) ||
+        const objective = safe(
+            seed.objective,
+            firstPoolValue(
+                "quests",
                 "Investigate an unresolved infrastructure problem"
-            );
+            )
+        );
 
-        const reward =
-            safe(
-                seed.reward,
-                pick(
-                    CONFIG.quest_rewards
-                ) ||
+        const reward = safe(
+            seed.reward,
+            firstPoolValue(
+                "quest_rewards",
                 "Archive favor"
-            );
+            )
+        );
 
-        const risk =
-            safe(
-                seed.risk,
-                pick(
-                    CONFIG.risk_levels
-                ) ||
+        const risk = safe(
+            seed.risk,
+            firstPoolValue(
+                "risk_levels",
                 "ELEVATED"
-            );
+            )
+        );
 
         const assignedBy =
             client
@@ -1724,14 +1709,12 @@
                 : faction;
 
         return {
-            id:
-                randomId(),
+            id: randomId(),
 
-            world:
-                safe(
-                    seed.world,
-                    world.name
-                ),
+            world: safe(
+                seed.world,
+                world.name
+            ),
 
             objective,
 
@@ -1739,20 +1722,18 @@
 
             risk,
 
-            client:
-                safe(
-                    seed.client,
-                    faction
-                ),
+            client: safe(
+                seed.client,
+                faction
+            ),
 
-            status:
-                safe(
-                    seed.status,
-                    pick(
-                        CONFIG.statuses
-                    ) ||
+            status: safe(
+                seed.status,
+                firstPoolValue(
+                    "statuses",
                     "ACTIVE"
-                ),
+                )
+            ),
 
             assignedBy,
 
@@ -1783,456 +1764,6 @@
     }
 
     /* ========================================================
-       PORTFOLIO GENERATION
-       ======================================================== */
-
-    function generatePortfolio() {
-        const world =
-            generateWorld();
-
-        const name =
-            safe(
-                pick(
-                    CONFIG.names
-                ),
-                "Unknown Engineer"
-            );
-
-        const title =
-            safe(
-                pick(
-                    CONFIG.titles
-                ),
-                "Software Engineer"
-            );
-
-        const personality =
-            safe(
-                pick(
-                    CONFIG.personalities
-                ),
-                "systems-minded"
-            );
-
-        const industry =
-            safe(
-                pick(
-                    CONFIG.industries
-                ),
-                "software infrastructure"
-            );
-
-        const education =
-            safe(
-                pick(
-                    CONFIG.education
-                ),
-                "Self-taught engineering background"
-            );
-
-        const faction =
-            safe(
-                pick(
-                    world.factions.length
-                        ? world.factions
-                        : CONFIG.factions
-                ),
-                "Independent Operators"
-            );
-
-        const genre =
-            world.genre;
-
-        const specialties =
-            sample(
-                CONFIG.specialties,
-                integer(
-                    6,
-                    11
-                )
-            );
-
-        const years =
-            integer(
-                3,
-                19
-            );
-
-        const chaos =
-            integer(
-                38,
-                100
-            );
-
-        const npcCount =
-            integer(
-                6,
-                11
-            );
-
-        const projectCount =
-            integer(
-                5,
-                9
-            );
-
-        const experienceCount =
-            integer(
-                4,
-                7
-            );
-
-        const incidentCount =
-            integer(
-                4,
-                8
-            );
-
-        const questCount =
-            integer(
-                2,
-                5
-            );
-
-        /* ----------------------------------------------------
-           NPCS
-           ---------------------------------------------------- */
-
-        const npcs = [];
-
-        const usedNPCNames =
-            new Set();
-
-        for (
-            let i = 0;
-            i < npcCount;
-            i++
-        ) {
-            npcs.push(
-                generateNPC(
-                    world,
-                    faction,
-                    usedNPCNames
-                )
-            );
-        }
-
-        /* ----------------------------------------------------
-           EXPERIENCE
-           ---------------------------------------------------- */
-
-        const experiences = [];
-
-        for (
-            let i = 0;
-            i < experienceCount;
-            i++
-        ) {
-            experiences.push(
-                generateExperience(
-                    world,
-                    faction,
-                    specialties
-                )
-            );
-        }
-
-        /* ----------------------------------------------------
-           PROJECTS
-           ---------------------------------------------------- */
-
-        const projects = [];
-
-        for (
-            let i = 0;
-            i < projectCount;
-            i++
-        ) {
-            projects.push(
-                generateProject(
-                    world,
-                    industry,
-                    specialties,
-                    npcs
-                )
-            );
-        }
-
-        /* ----------------------------------------------------
-           INCIDENTS
-           ---------------------------------------------------- */
-
-        const incidents = [];
-
-        for (
-            let i = 0;
-            i < incidentCount;
-            i++
-        ) {
-            incidents.push(
-                generateIncident(
-                    world,
-                    npcs,
-                    projects
-                )
-            );
-        }
-
-        /* ----------------------------------------------------
-           QUESTS
-           ---------------------------------------------------- */
-
-        const quests = [];
-
-        for (
-            let i = 0;
-            i < questCount;
-            i++
-        ) {
-            quests.push(
-                generateQuest(
-                    world,
-                    npcs,
-                    faction
-                )
-            );
-        }
-
-        /* ----------------------------------------------------
-           UI
-           ---------------------------------------------------- */
-
-        const ui =
-            generateUIDNA({
-                world,
-                title,
-                personality,
-                genre,
-                chaos,
-                specialties
-            });
-
-        /* ----------------------------------------------------
-           METRICS
-           ---------------------------------------------------- */
-
-        const metrics = {
-            deployments:
-                integer(
-                    180,
-                    1800
-                ),
-
-            systems:
-                integer(
-                    7,
-                    49
-                ),
-
-            incidents:
-                integer(
-                    8,
-                    72
-                ),
-
-            users:
-                integer(
-                    2500,
-                    99000000
-                ),
-
-            uptime:
-                (
-                    99 +
-                    random() * 0.99
-                ).toFixed(
-                    2
-                ),
-
-            coffee:
-                integer(
-                    731,
-                    29821
-                ),
-
-            worldsVisited:
-                integer(
-                    2,
-                    19
-                ),
-
-            unresolvedMysteries:
-                integer(
-                    1,
-                    37
-                ),
-
-            realityStability:
-                integer(
-                    11,
-                    99
-                )
-        };
-
-        /* ----------------------------------------------------
-           TIMELINE
-           ---------------------------------------------------- */
-
-        const timeline =
-            generateTimeline(
-                years,
-                industry,
-                experiences
-            );
-
-        /* ----------------------------------------------------
-           ARCHIVE DATES
-           ---------------------------------------------------- */
-
-        const currentYear =
-            new Date()
-                .getFullYear();
-
-        const createdYear =
-            integer(
-                Math.max(
-                    2012,
-                    currentYear - years
-                ),
-                currentYear
-            );
-
-        const updatedYear =
-            integer(
-                createdYear,
-                currentYear + 1
-            );
-
-        const created =
-            `${createdYear}-${String(
-                integer(
-                    1,
-                    12
-                )
-            ).padStart(
-                2,
-                "0"
-            )}-${String(
-                integer(
-                    1,
-                    28
-                )
-            ).padStart(
-                2,
-                "0"
-            )}`;
-
-        const lastUpdated =
-            `${updatedYear}-${String(
-                integer(
-                    1,
-                    12
-                )
-            ).padStart(
-                2,
-                "0"
-            )}-${String(
-                integer(
-                    1,
-                    28
-                )
-            ).padStart(
-                2,
-                "0"
-            )}`;
-
-        const portfolio = {
-            id:
-                randomId(),
-
-            name,
-
-            title,
-
-            personality,
-
-            specialties,
-
-            industry,
-
-            education,
-
-            years,
-
-            world,
-
-            faction,
-
-            genre,
-
-            chaos,
-
-            ui,
-
-            metrics,
-
-            experiences,
-
-            projects,
-
-            npcs,
-
-            incidents,
-
-            quests,
-
-            timeline,
-
-            archive: {
-                classification:
-                    pick([
-                        "PUBLIC",
-                        "PARTIALLY CLASSIFIED",
-                        "RESTRICTED",
-                        "CONFIDENTIAL",
-                        "ARCHIVED",
-                        "DO NOT DISTRIBUTE"
-                    ]),
-
-                created,
-
-                lastUpdated,
-
-                author:
-                    name,
-
-                archiveNumber:
-                    randomCode(),
-
-                warning:
-                    pick([
-                        "Some records may describe events that have not happened yet.",
-                        "Several names have been redacted for reasons nobody can explain.",
-                        "This archive is considered structurally harmless.",
-                        "Reading beyond this point is technically optional.",
-                        "The archive has requested that it not be deleted.",
-                        "Cross-reference inconsistencies are expected."
-                    ])
-            },
-
-            quest:
-                quests[0]
-        };
-
-        portfolio.signature =
-            makeSignature(
-                portfolio
-            );
-
-        return portfolio;
-    }
-
-    /* ========================================================
        TIMELINE
        ======================================================== */
 
@@ -2242,23 +1773,25 @@
         experiences
     ) {
         const currentYear =
-            new Date()
-                .getFullYear();
+            new Date().getFullYear();
 
         const startYear =
             currentYear -
-            years;
+            Math.max(
+                years,
+                1
+            );
 
         const events = [];
 
-        const count =
+        const count = clamp(
             Math.max(
                 6,
-                Math.min(
-                    11,
-                    experiences.length + 3
-                )
-            );
+                experiences.length + 3
+            ),
+            6,
+            11
+        );
 
         const titles = [
             "Entered the field",
@@ -2359,24 +1892,60 @@
         chaos,
         specialties
     }) {
+        const families =
+            uiPool(
+                "ui_families",
+                DEFAULT_UI_FAMILIES
+            );
+
+        const layouts =
+            uiPool(
+                "layouts",
+                DEFAULT_LAYOUTS
+            );
+
+        const navs =
+            uiPool(
+                "navs",
+                DEFAULT_NAVS
+            );
+
+        const heroes =
+            uiPool(
+                "hero_modes",
+                DEFAULT_HERO_MODES
+            );
+
         const weights = {};
 
         for (
-            const family of
-            CONFIG.ui_families
+            const family of families
         ) {
-            weights[family] =
-                1;
+            weights[family] = 1;
         }
+
+        const addWeight = (
+            family,
+            amount
+        ) => {
+            if (
+                Object.prototype.hasOwnProperty.call(
+                    weights,
+                    family
+                )
+            ) {
+                weights[family] += amount;
+            }
+        };
 
         if (
             /backend|platform|systems|devops|infrastructure/i.test(
                 title
             )
         ) {
-            weights.terminal += 5;
-            weights["operating-system"] += 4;
-            weights.executive += 2;
+            addWeight("terminal", 5);
+            addWeight("operating-system", 4);
+            addWeight("executive", 2);
         }
 
         if (
@@ -2384,8 +1953,8 @@
                 title
             )
         ) {
-            weights.research += 5;
-            weights.space += 2;
+            addWeight("research", 5);
+            addWeight("space", 2);
         }
 
         if (
@@ -2393,8 +1962,8 @@
                 title
             )
         ) {
-            weights.dossier += 5;
-            weights.detective += 4;
+            addWeight("dossier", 5);
+            addWeight("detective", 4);
         }
 
         if (
@@ -2402,8 +1971,8 @@
                 title
             )
         ) {
-            weights.manhwa += 4;
-            weights.luxury += 3;
+            addWeight("manhwa", 4);
+            addWeight("luxury", 3);
         }
 
         if (
@@ -2411,9 +1980,9 @@
                 genre
             )
         ) {
-            weights.rpg += 5;
-            weights.spellbook += 5;
-            weights.manhwa += 4;
+            addWeight("rpg", 5);
+            addWeight("spellbook", 5);
+            addWeight("manhwa", 4);
         }
 
         if (
@@ -2421,16 +1990,16 @@
                 world.genre
             )
         ) {
-            weights.space += 6;
-            weights.research += 3;
+            addWeight("space", 6);
+            addWeight("research", 3);
         }
 
         if (
             chaos > 78
         ) {
-            weights.chaotic += 7;
-            weights.brutalist += 3;
-            weights.underground += 3;
+            addWeight("chaotic", 7);
+            addWeight("brutalist", 3);
+            addWeight("underground", 3);
         }
 
         if (
@@ -2438,8 +2007,8 @@
                 "methodical"
             )
         ) {
-            weights.executive += 4;
-            weights.research += 2;
+            addWeight("executive", 4);
+            addWeight("research", 2);
         }
 
         if (
@@ -2447,7 +2016,7 @@
                 "chaotic"
             )
         ) {
-            weights.chaotic += 6;
+            addWeight("chaotic", 6);
         }
 
         const family =
@@ -2456,19 +2025,16 @@
             );
 
         const layout =
-            pick(
-                CONFIG.layouts
-            );
+            pick(layouts) ||
+            "dashboard";
 
         const nav =
-            pick(
-                CONFIG.navs
-            );
+            pick(navs) ||
+            "top";
 
         const hero =
-            pick(
-                CONFIG.hero_modes
-            );
+            pick(heroes) ||
+            "identity";
 
         const palette =
             choosePalette(
@@ -2480,53 +2046,48 @@
         if (
             chaos > 82
         ) {
-            density =
-                "compact";
+            density = "compact";
         } else if (
             chaos < 45
         ) {
-            density =
-                "spacious";
+            density = "spacious";
         } else {
             density =
                 pick([
                     "compact",
                     "normal",
                     "spacious"
-                ]);
+                ]) ||
+                "normal";
         }
 
         const decoration =
             chaos > 80
-                ? pick([
-                    "grid",
-                    "dots",
-                    "scanlines"
-                ])
-                : pick([
-                    "none",
-                    "grid",
-                    "dots"
-                ]);
+                ? (
+                    pick([
+                        "grid",
+                        "dots",
+                        "scanlines"
+                    ]) || "grid"
+                )
+                : (
+                    pick([
+                        "none",
+                        "grid",
+                        "dots"
+                    ]) || "none"
+                );
 
         return {
             family,
-
             layout,
-
             nav,
-
             hero,
-
             density,
-
             decoration,
 
             radius:
-                integer(
-                    0,
-                    24
-                ),
+                integer(0, 24),
 
             accent:
                 palette.accent,
@@ -2547,24 +2108,25 @@
             specialtyCount:
                 specialties.length,
 
-            longForm:
-                true,
-
-            textHeavy:
-                true,
-
-            cardFirst:
-                true
+            /*
+             * Kept for compatibility with older CSS/JS.
+             * The renderer itself remains card-first.
+             */
+            longForm: false,
+            textHeavy: false,
+            cardFirst: true
         };
     }
 
-    function weightedChoice(
-        weights
-    ) {
+    function weightedChoice(weights) {
         const entries =
             Object.entries(
                 weights
             );
+
+        if (!entries.length) {
+            return "executive";
+        }
 
         const total =
             entries.reduce(
@@ -2572,9 +2134,17 @@
                     sum,
                     [, weight]
                 ) =>
-                    sum + weight,
+                    sum +
+                    Math.max(
+                        0,
+                        Number(weight) || 0
+                    ),
                 0
             );
+
+        if (total <= 0) {
+            return entries[0][0];
+        }
 
         let cursor =
             random() *
@@ -2587,7 +2157,10 @@
             ] of entries
         ) {
             cursor -=
-                weight;
+                Math.max(
+                    0,
+                    Number(weight) || 0
+                );
 
             if (
                 cursor <= 0
@@ -2724,53 +2297,476 @@
     function makeSignature(
         portfolio
     ) {
-        return hashString(
-            [
-                portfolio.name,
+        return hashString([
+            portfolio.name,
+            portfolio.title,
+            portfolio.world.name,
+            portfolio.faction,
+            portfolio.genre,
+            portfolio.ui.family,
+            portfolio.ui.layout,
+            portfolio.ui.hero,
 
-                portfolio.title,
+            portfolio.experiences
+                .map(item => item.id)
+                .join(","),
 
-                portfolio.world.name,
+            portfolio.projects
+                .map(item => item.id)
+                .join(","),
 
-                portfolio.faction,
+            portfolio.npcs
+                .map(item => item.id)
+                .join(","),
 
-                portfolio.genre,
+            portfolio.incidents
+                .map(item => item.code)
+                .join(",")
+        ].join("|"));
+    }
 
-                portfolio.ui.family,
+    /* ========================================================
+       PORTFOLIO GENERATION
+       ======================================================== */
 
-                portfolio.ui.layout,
+    function generatePortfolio() {
+        runtime.npcIndex.clear();
+        runtime.worldIndex.clear();
 
-                portfolio.ui.hero,
+        const world =
+            generateWorld();
 
-                portfolio.experiences
-                    .map(
-                        item =>
-                            item.id
-                    )
-                    .join(","),
+        const name =
+            safe(
+                pick(
+                    pool("names")
+                ),
+                "Unknown Engineer"
+            );
 
-                portfolio.projects
-                    .map(
-                        item =>
-                            item.name
-                    )
-                    .join(","),
+        const title =
+            safe(
+                pick(
+                    pool("titles")
+                ),
+                "Software Engineer"
+            );
 
-                portfolio.npcs
-                    .map(
-                        item =>
-                            item.id
-                    )
-                    .join(","),
+        const personality =
+            safe(
+                pick(
+                    pool("personalities")
+                ),
+                "systems-minded"
+            );
 
-                portfolio.incidents
-                    .map(
-                        item =>
-                            item.code
-                    )
-                    .join(",")
-            ].join("|")
-        );
+        const industries =
+            pool(
+                "industries",
+                ["software infrastructure"]
+            );
+
+        const industry =
+            safe(
+                pick(industries),
+                "software infrastructure"
+            );
+
+        const education =
+            safe(
+                pick(
+                    pool("education")
+                ),
+                "Self-taught engineering background"
+            );
+
+        const faction =
+            safe(
+                pick(
+                    world.factions.length
+                        ? world.factions
+                        : pool("factions")
+                ),
+                "Independent Operators"
+            );
+
+        const genre =
+            safe(
+                world.genre,
+                "speculative fiction"
+            );
+
+        const specialtyPool =
+            pool(
+                "specialties",
+                ["systems engineering"]
+            );
+
+        const specialties =
+            sample(
+                specialtyPool,
+                clamp(
+                    integer(6, 11),
+                    1,
+                    specialtyPool.length
+                )
+            );
+
+        const years =
+            integer(3, 19);
+
+        const chaos =
+            integer(38, 100);
+
+        /*
+         * Generation sizes.
+         *
+         * If the Python config provides explicit counts,
+         * use those values. Otherwise use the intended
+         * procedural defaults.
+         */
+
+        const generation =
+            CONFIG.generation_counts ||
+            CONFIG.generation ||
+            {};
+
+        const npcCount =
+            Number(
+                generation.npcs ??
+                generation.NPCs ??
+                80
+            ) || 80;
+
+        const projectCount =
+            Number(
+                generation.projects ??
+                64
+            ) || 64;
+
+        const experienceCount =
+            Number(
+                generation.experiences ??
+                48
+            ) || 48;
+
+        const incidentCount =
+            Number(
+                generation.incidents ??
+                64
+            ) || 64;
+
+        const questCount =
+            Number(
+                generation.quests ??
+                48
+            ) || 48;
+
+        /*
+         * ----------------------------------------------------
+         * NPCS
+         * ----------------------------------------------------
+         */
+
+        const npcs = [];
+        const usedNPCNames = new Set();
+
+        for (
+            let i = 0;
+            i < npcCount;
+            i++
+        ) {
+            npcs.push(
+                generateNPC(
+                    world,
+                    faction,
+                    usedNPCNames
+                )
+            );
+        }
+
+        /*
+         * ----------------------------------------------------
+         * EXPERIENCES
+         * ----------------------------------------------------
+         */
+
+        const experiences = [];
+
+        for (
+            let i = 0;
+            i < experienceCount;
+            i++
+        ) {
+            experiences.push(
+                generateExperience(
+                    world,
+                    faction,
+                    specialties
+                )
+            );
+        }
+
+        /*
+         * ----------------------------------------------------
+         * PROJECTS
+         * ----------------------------------------------------
+         */
+
+        const projects = [];
+
+        for (
+            let i = 0;
+            i < projectCount;
+            i++
+        ) {
+            projects.push(
+                generateProject(
+                    world,
+                    industry,
+                    specialties,
+                    npcs,
+                    i + 1
+                )
+            );
+        }
+
+        /*
+         * ----------------------------------------------------
+         * INCIDENTS
+         * ----------------------------------------------------
+         */
+
+        const incidents = [];
+
+        for (
+            let i = 0;
+            i < incidentCount;
+            i++
+        ) {
+            incidents.push(
+                generateIncident(
+                    world,
+                    npcs,
+                    projects
+                )
+            );
+        }
+
+        /*
+         * ----------------------------------------------------
+         * QUESTS
+         * ----------------------------------------------------
+         */
+
+        const quests = [];
+
+        for (
+            let i = 0;
+            i < questCount;
+            i++
+        ) {
+            quests.push(
+                generateQuest(
+                    world,
+                    npcs,
+                    faction
+                )
+            );
+        }
+
+        /*
+         * ----------------------------------------------------
+         * UI
+         * ----------------------------------------------------
+         */
+
+        const ui =
+            generateUIDNA({
+                world,
+                title,
+                personality,
+                genre,
+                chaos,
+                specialties
+            });
+
+        /*
+         * ----------------------------------------------------
+         * METRICS
+         * ----------------------------------------------------
+         */
+
+        const metrics = {
+            deployments:
+                integer(
+                    180,
+                    1800
+                ),
+
+            systems:
+                integer(
+                    7,
+                    49
+                ),
+
+            incidents:
+                integer(
+                    8,
+                    72
+                ),
+
+            users:
+                integer(
+                    2500,
+                    99000000
+                ),
+
+            uptime:
+                (
+                    99 +
+                    random() * 0.99
+                ).toFixed(2),
+
+            coffee:
+                integer(
+                    731,
+                    29821
+                ),
+
+            worldsVisited:
+                integer(
+                    2,
+                    19
+                ),
+
+            unresolvedMysteries:
+                integer(
+                    1,
+                    37
+                ),
+
+            realityStability:
+                integer(
+                    11,
+                    99
+                )
+        };
+
+        /*
+         * ----------------------------------------------------
+         * TIMELINE
+         * ----------------------------------------------------
+         */
+
+        const timeline =
+            generateTimeline(
+                years,
+                industry,
+                experiences
+            );
+
+        /*
+         * ----------------------------------------------------
+         * ARCHIVE
+         * ----------------------------------------------------
+         */
+
+        const archiveDates =
+            orderedArchiveDates(
+                years
+            );
+
+        const archive = {
+            classification:
+                pick([
+                    "PUBLIC",
+                    "PARTIALLY CLASSIFIED",
+                    "RESTRICTED",
+                    "CONFIDENTIAL",
+                    "ARCHIVED",
+                    "DO NOT DISTRIBUTE"
+                ]) ||
+                "PUBLIC",
+
+            created:
+                archiveDates.created,
+
+            lastUpdated:
+                archiveDates.lastUpdated,
+
+            author:
+                name,
+
+            archiveNumber:
+                randomCode(),
+
+            warning:
+                pick([
+                    "Some records may describe events that have not happened yet.",
+                    "Several names have been redacted for reasons nobody can explain.",
+                    "This archive is considered structurally harmless.",
+                    "Reading beyond this point is technically optional.",
+                    "The archive has requested that it not be deleted.",
+                    "Cross-reference inconsistencies are expected."
+                ]) ||
+                "Cross-reference inconsistencies are expected."
+        };
+
+        const portfolio = {
+            id:
+                randomId(),
+
+            name,
+
+            title,
+
+            personality,
+
+            specialties,
+
+            industry,
+
+            education,
+
+            years,
+
+            world,
+
+            faction,
+
+            genre,
+
+            chaos,
+
+            ui,
+
+            metrics,
+
+            experiences,
+
+            projects,
+
+            npcs,
+
+            incidents,
+
+            quests,
+
+            timeline,
+
+            archive,
+
+            quest:
+                quests[0] || null
+        };
+
+        portfolio.signature =
+            makeSignature(
+                portfolio
+            );
+
+        return portfolio;
     }
 
     function generateUniquePortfolio() {
@@ -2811,35 +2807,61 @@
             document.documentElement;
 
         const ui =
-            portfolio.ui;
+            portfolio.ui || {};
 
         root.style.setProperty(
             "--accent",
-            ui.accent
+            safe(
+                ui.accent,
+                "#8b7cff"
+            )
         );
 
         root.style.setProperty(
             "--accent-2",
-            ui.accent2
+            safe(
+                ui.accent2,
+                "#58e0bd"
+            )
         );
 
         root.style.setProperty(
             "--bg",
-            ui.background
+            safe(
+                ui.background,
+                "#090a0c"
+            )
         );
 
         root.style.setProperty(
             "--surface",
-            ui.surface
+            safe(
+                ui.surface,
+                "#101216"
+            )
         );
 
         root.style.setProperty(
             "--radius",
-            `${ui.radius}px`
+            `${clamp(
+                Number(ui.radius) || 0,
+                0,
+                32
+            )}px`
+        );
+
+        root.style.setProperty(
+            "--chaos",
+            String(
+                portfolio.chaos
+            )
         );
 
         root.dataset.uiFamily =
-            ui.family;
+            safe(
+                ui.family,
+                "executive"
+            );
     }
 
     /* ========================================================
@@ -2853,13 +2875,9 @@
         return `
             <a
                 class="nav-link"
-                href="#${escapeHTML(
-                    target
-                )}"
+                href="#${escapeHTML(target)}"
             >
-                ${escapeHTML(
-                    label
-                )}
+                ${escapeHTML(label)}
             </a>
         `;
     }
@@ -2868,7 +2886,10 @@
         portfolio
     ) {
         const nav =
-            portfolio.ui.nav;
+            safe(
+                portfolio.ui.nav,
+                "top"
+            );
 
         const links = [
             navLink(
@@ -2904,6 +2925,11 @@
             navLink(
                 "quests",
                 "Quests"
+            ),
+
+            navLink(
+                "timeline",
+                "Timeline"
             )
         ].join("");
 
@@ -2914,10 +2940,17 @@
 
         return `
             <nav
-                class="nav ${nav === "rail" ? "nav-rail" : ""}"
+                class="nav ${
+                    nav === "rail"
+                        ? "nav-rail"
+                        : ""
+                }"
                 aria-label="Archive navigation"
             >
-                ${links}
+
+                <div class="nav-links">
+                    ${links}
+                </div>
 
                 <button
                     class="action-button"
@@ -2928,6 +2961,7 @@
                         buttonLabel
                     )}
                 </button>
+
             </nav>
         `;
     }
@@ -2999,7 +3033,7 @@
                     "UNREASONABLY PRODUCTIVE",
                     "UNVERIFIED",
                     "UNDER OBSERVATION"
-                ])}`,
+                ]) || "OPERATIONAL"}`,
 
             command:
                 `Command interface for a ${portfolio.title.toLowerCase()} with ${portfolio.years} years of accumulated engineering damage.`,
@@ -3016,6 +3050,12 @@
             "field-report":
                 `Field report from ${portfolio.world.name}: engineer remains operational. Infrastructure remains questionable.`
         };
+
+        const selectedHero =
+            heroCopy[
+                portfolio.ui.hero
+            ] ||
+            heroCopy.identity;
 
         return `
             <section
@@ -3049,10 +3089,7 @@
                             )}
                             ·
                             ${escapeHTML(
-                                heroCopy[
-                                    portfolio.ui.hero
-                                ] ||
-                                heroCopy.identity
+                                selectedHero
                             )}
                         </p>
 
@@ -3125,9 +3162,7 @@
             <div class="meta-box">
 
                 <span class="meta-label">
-                    ${escapeHTML(
-                        label
-                    )}
+                    ${escapeHTML(label)}
                 </span>
 
                 <span class="meta-value">
@@ -3191,15 +3226,11 @@
             <article class="stat card">
 
                 <span class="stat-number">
-                    ${escapeHTML(
-                        value
-                    )}
+                    ${escapeHTML(value)}
                 </span>
 
                 <span class="stat-label">
-                    ${escapeHTML(
-                        label
-                    )}
+                    ${escapeHTML(label)}
                 </span>
 
             </article>
@@ -3221,15 +3252,11 @@
                 <div>
 
                     <div class="section-kicker">
-                        ${escapeHTML(
-                            kicker
-                        )}
+                        ${escapeHTML(kicker)}
                     </div>
 
                     <h2>
-                        ${escapeHTML(
-                            title
-                        )}
+                        ${escapeHTML(title)}
                     </h2>
 
                     ${
@@ -3251,7 +3278,7 @@
     }
 
     /* ========================================================
-       SMALL CARD HELPERS
+       CARD HELPERS
        ======================================================== */
 
     function infoCard(
@@ -3261,13 +3288,13 @@
     ) {
         return `
             <article
-                class="card content-card ${extraClass}"
+                class="card content-card ${escapeHTML(
+                    extraClass
+                )}"
             >
 
                 <span class="meta-label">
-                    ${escapeHTML(
-                        label
-                    )}
+                    ${escapeHTML(label)}
                 </span>
 
                 <p class="card-text">
@@ -3290,13 +3317,13 @@
     ) {
         return `
             <article
-                class="card content-card ${extraClass}"
+                class="card content-card ${escapeHTML(
+                    extraClass
+                )}"
             >
 
                 <div class="section-kicker">
-                    ${escapeHTML(
-                        label
-                    )}
+                    ${escapeHTML(label)}
                 </div>
 
                 <p class="card-text">
@@ -3317,25 +3344,21 @@
         className = ""
     ) {
         const list =
-            safeArray(
-                values
-            );
+            safeArray(values);
 
-        if (
-            !list.length
-        ) {
+        if (!list.length) {
             return "";
         }
 
         return `
-            <div class="tags ${className}">
+            <div class="tags ${escapeHTML(
+                className
+            )}">
                 ${list
                     .map(
                         value => `
                             <span class="tag">
-                                ${escapeHTML(
-                                    value
-                                )}
+                                ${escapeHTML(value)}
                             </span>
                         `
                     )
@@ -3351,6 +3374,14 @@
     function renderProfile(
         portfolio
     ) {
+        const firstSpecialty =
+            portfolio.specialties[0] ||
+            "systems engineering";
+
+        const secondSpecialty =
+            portfolio.specialties[1] ||
+            "software architecture";
+
         return `
             <section
                 class="section"
@@ -3367,7 +3398,7 @@
 
                     ${textCard(
                         "Operating Profile",
-                        `${portfolio.name} is a ${portfolio.personality} ${portfolio.title.toLowerCase()} working primarily in ${portfolio.industry}.`
+                        `${portfolio.name} is ${articleFor(portfolio.personality)} ${portfolio.personality} ${portfolio.title.toLowerCase()} working primarily in ${portfolio.industry}.`
                     )}
 
                     ${textCard(
@@ -3386,12 +3417,12 @@
 
                     ${renderProfileFact(
                         "Primary Specialty",
-                        portfolio.specialties[0]
+                        firstSpecialty
                     )}
 
                     ${renderProfileFact(
                         "Secondary Specialty",
-                        portfolio.specialties[1]
+                        secondSpecialty
                     )}
 
                     ${renderProfileFact(
@@ -3440,16 +3471,12 @@
             <article class="card content-card">
 
                 <span class="meta-label">
-                    ${escapeHTML(
-                        label
-                    )}
+                    ${escapeHTML(label)}
                 </span>
 
                 <h3 class="card-title">
                     ${escapeHTML(
-                        safe(
-                            value
-                        )
+                        safe(value)
                     )}
                 </h3>
 
@@ -3612,7 +3639,9 @@
 
                         <div class="achievement-list">
 
-                            ${experience.achievements
+                            ${safeArray(
+                                experience.achievements
+                            )
                                 .map(
                                     achievement => `
                                         <div class="achievement">
@@ -3805,7 +3834,9 @@
 
                     <div class="technical-notes">
 
-                        ${project.technicalNotes
+                        ${safeArray(
+                            project.technicalNotes
+                        )
                             .map(
                                 note => `
                                     <div class="technical-note">
@@ -3837,16 +3868,12 @@
             <div class="project-metric">
 
                 <span>
-                    ${escapeHTML(
-                        label
-                    )}
+                    ${escapeHTML(label)}
                 </span>
 
                 <strong>
                     ${escapeHTML(
-                        safe(
-                            value
-                        )
+                        safe(value)
                     )}
                 </strong>
 
@@ -3901,7 +3928,9 @@
 
                             ${infoCard(
                                 "Population",
-                                `${world.population.toLocaleString()} inhabitants`
+                                `${Number(
+                                    world.population
+                                ).toLocaleString()} inhabitants`
                             )}
 
                             ${infoCard(
@@ -3993,7 +4022,9 @@
 
                 <div class="card-grid">
 
-                    ${world.rules
+                    ${safeArray(
+                        world.rules
+                    )
                         .map(
                             (
                                 rule,
@@ -4040,7 +4071,9 @@
 
                 <div class="card-grid faction-grid">
 
-                    ${world.factions
+                    ${safeArray(
+                        world.factions
+                    )
                         .map(
                             (
                                 faction,
@@ -4245,7 +4278,9 @@
 
                         <div class="rumor-list">
 
-                            ${npc.rumors
+                            ${safeArray(
+                                npc.rumors
+                            )
                                 .map(
                                     rumor => `
                                         <div class="achievement">
@@ -4281,16 +4316,12 @@
             <div class="npc-fact">
 
                 <span>
-                    ${escapeHTML(
-                        label
-                    )}
+                    ${escapeHTML(label)}
                 </span>
 
                 <strong>
                     ${escapeHTML(
-                        safe(
-                            value
-                        )
+                        safe(value)
                     )}
                 </strong>
 
@@ -4801,7 +4832,7 @@
         );
 
         const ui =
-            portfolio.ui;
+            portfolio.ui || {};
 
         const app =
             document.getElementById(
@@ -4814,36 +4845,55 @@
 
         /*
          * IMPORTANT:
-         * These classes preserve the existing UI-family system.
-         * The card-first rendering above does not replace it.
+         * These classes preserve the UI-family system.
          */
 
         app.className = [
             "app",
 
             `ui-${slug(
-                ui.family
+                safe(
+                    ui.family,
+                    "executive"
+                )
             )}`,
 
             `layout-${slug(
-                ui.layout
+                safe(
+                    ui.layout,
+                    "dashboard"
+                )
             )}`,
 
             `density-${slug(
-                ui.density
+                safe(
+                    ui.density,
+                    "normal"
+                )
             )}`
         ].join(" ");
 
         app.dataset.decoration =
-            ui.decoration;
+            safe(
+                ui.decoration,
+                "none"
+            );
 
         app.dataset.navigation =
-            ui.nav;
+            safe(
+                ui.nav,
+                "top"
+            );
 
         app.dataset.generation =
             String(
                 runtime.generationCount
             );
+
+        /*
+         * Render in one assignment.
+         * This prevents partially-rendered states.
+         */
 
         app.innerHTML = `
 
@@ -4921,10 +4971,23 @@
             portfolio
         );
 
-        window.scrollTo({
-            top: 0,
-            behavior: "instant"
-        });
+        /*
+         * Avoid scroll errors in browsers that do not
+         * recognize behavior:"instant".
+         */
+
+        try {
+            window.scrollTo({
+                top: 0,
+                left: 0,
+                behavior: "instant"
+            });
+        } catch {
+            window.scrollTo(
+                0,
+                0
+            );
+        }
     }
 
     /* ========================================================
@@ -4938,7 +5001,9 @@
             button => {
                 button.addEventListener(
                     "click",
-                    () => {
+                    event => {
+                        event.preventDefault();
+
                         generateAndRender();
                     }
                 );
@@ -4975,9 +5040,7 @@
                             return;
                         }
 
-                        if (
-                            !element
-                        ) {
+                        if (!element) {
                             return;
                         }
 
@@ -4989,6 +5052,21 @@
                             block:
                                 "start"
                         });
+
+                        /*
+                         * Preserve the visible URL anchor
+                         * without reloading the page.
+                         */
+
+                        try {
+                            history.replaceState(
+                                null,
+                                "",
+                                target
+                            );
+                        } catch {
+                            /* Browser may block history changes. */
+                        }
                     }
                 );
             }
@@ -5035,11 +5113,23 @@
             live.style.height =
                 "1px";
 
+            live.style.padding =
+                "0";
+
+            live.style.margin =
+                "-1px";
+
             live.style.overflow =
                 "hidden";
 
             live.style.clip =
                 "rect(0 0 0 0)";
+
+            live.style.whiteSpace =
+                "nowrap";
+
+            live.style.border =
+                "0";
 
             document.body.appendChild(
                 live
@@ -5059,12 +5149,130 @@
        ======================================================== */
 
     function generateAndRender() {
-        const next =
-            generateUniquePortfolio();
+        try {
+            const next =
+                generateUniquePortfolio();
 
-        render(
-            next
+            render(
+                next
+            );
+        } catch (error) {
+            renderRuntimeError(
+                error
+            );
+        }
+    }
+
+    /* ========================================================
+       RUNTIME ERROR SCREEN
+       ======================================================== */
+
+    function renderRuntimeError(
+        error
+    ) {
+        console.error(
+            "ABSURD CHAOS PORTFOLIO RUNTIME ERROR:",
+            error
         );
+
+        const app =
+            document.getElementById(
+                "app"
+            );
+
+        if (!app) {
+            return;
+        }
+
+        app.innerHTML = `
+            <main style="
+                min-height:100vh;
+                display:grid;
+                place-items:center;
+                padding:24px;
+                font-family:system-ui,sans-serif;
+                background:var(--bg,#090a0c);
+                color:var(--text,#f5f7fa);
+            ">
+
+                <section style="
+                    width:min(100%,720px);
+                    padding:32px;
+                    border:1px solid rgba(255,255,255,.14);
+                    background:var(--surface,#101216);
+                    border-radius:var(--radius,16px);
+                ">
+
+                    <div style="
+                        font-size:.75rem;
+                        letter-spacing:.14em;
+                        text-transform:uppercase;
+                        opacity:.65;
+                        margin-bottom:12px;
+                    ">
+                        Runtime Incident
+                    </div>
+
+                    <h1 style="
+                        margin:0 0 12px;
+                    ">
+                        The portfolio generator encountered an anomaly.
+                    </h1>
+
+                    <p style="
+                        opacity:.75;
+                        line-height:1.7;
+                    ">
+                        The generator failed while constructing this
+                        fictional reality. Try generating another reality.
+                    </p>
+
+                    <button
+                        type="button"
+                        data-recover
+                        style="
+                            border:0;
+                            padding:12px 18px;
+                            border-radius:10px;
+                            cursor:pointer;
+                            background:var(--accent,#8b7cff);
+                            color:#fff;
+                            font:inherit;
+                        "
+                    >
+                        Retry Generation
+                    </button>
+
+                </section>
+
+            </main>
+        `;
+
+        const recover =
+            app.querySelector(
+                "[data-recover]"
+            );
+
+        if (recover) {
+            recover.addEventListener(
+                "click",
+                () => {
+                    try {
+                        const next =
+                            generateUniquePortfolio();
+
+                        render(
+                            next
+                        );
+                    } catch (retryError) {
+                        console.error(
+                            "Retry failed:",
+                            retryError
+                        );
+                    }
+                }
+            );
+        }
     }
 
     /* ========================================================
@@ -5075,16 +5283,30 @@
         "keydown",
         event => {
             if (
-                event.key.toLowerCase() ===
-                "g" &&
-                !isTypingTarget(
+                event.defaultPrevented
+            ) {
+                return;
+            }
+
+            if (
+                String(
+                    event.key
+                ).toLowerCase() !== "g"
+            ) {
+                return;
+            }
+
+            if (
+                isTypingTarget(
                     event.target
                 )
             ) {
-                event.preventDefault();
-
-                generateAndRender();
+                return;
             }
+
+            event.preventDefault();
+
+            generateAndRender();
         }
     );
 
@@ -5107,16 +5329,43 @@
     }
 
     /* ========================================================
+       VISIBILITY / PERFORMANCE
+       ======================================================== */
+
+    document.addEventListener(
+        "visibilitychange",
+        () => {
+            /*
+             * Deliberately do nothing.
+             *
+             * The portfolio is generated only when the user
+             * explicitly refreshes or requests another reality.
+             *
+             * No timers.
+             * No polling.
+             * No storage.
+             * No background requests.
+             */
+        }
+    );
+
+    /* ========================================================
        BOOT
        ======================================================== */
 
     function boot() {
-        const portfolio =
-            generateUniquePortfolio();
+        try {
+            const portfolio =
+                generateUniquePortfolio();
 
-        render(
-            portfolio
-        );
+            render(
+                portfolio
+            );
+        } catch (error) {
+            renderRuntimeError(
+                error
+            );
+        }
     }
 
     boot();
