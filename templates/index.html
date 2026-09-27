@@ -10,7 +10,12 @@
 
     <meta
         name="description"
-        content="A procedurally generated professional portfolio from an absurd fictional universe."
+        content="A procedurally generated fictional portfolio from an absurd universe."
+    >
+
+    <meta
+        name="robots"
+        content="index,follow"
     >
 
     <meta
@@ -19,11 +24,11 @@
     >
 
     <meta
-        name="robots"
-        content="index,follow"
+        name="color-scheme"
+        content="dark light"
     >
 
-    <title>Procedural Portfolio</title>
+    <title>Absurd Chaos Portfolio</title>
 
     <style>
 {{GENERATED_CSS}}
@@ -31,35 +36,41 @@
 </head>
 
 <body>
-    <a
-        class="skip-link"
-        href="#main-content"
-    >
-        Skip to content
-    </a>
 
-    <div
-        id="app"
-        aria-live="polite"
-    ></div>
+<a
+    class="skip-link"
+    href="#main-content"
+>
+    Skip to main content
+</a>
 
-    <noscript>
-        <main class="noscript">
+<div
+    id="app"
+    aria-live="polite"
+    aria-busy="true"
+></div>
+
+<noscript>
+    <main class="noscript">
+        <div class="noscript-card">
+            <span class="eyebrow">SYSTEM REQUIREMENT</span>
             <h1>JavaScript Required</h1>
             <p>
-                This procedural portfolio requires JavaScript because every
-                refresh generates a new fictional portfolio entirely in
-                browser memory.
+                This portfolio is generated entirely inside your browser.
+                JavaScript must be enabled because every page load creates a
+                completely new fictional portfolio.
             </p>
-        </main>
-    </noscript>
+        </div>
+    </main>
+</noscript>
 
-    <script>
+<script>
 window.__ABSURD_CONFIG__ = {{GENERATED_CONFIG}};
-    </script>
+</script>
 
-    <script>
+<script>
 {{GENERATED_JS}}
-    </script>
+</script>
+
 </body>
 </html>
