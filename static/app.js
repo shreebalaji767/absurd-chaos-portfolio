@@ -1,19 +1,17 @@
 /* ============================================================
    ABSURD CHAOS PORTFOLIO
    ------------------------------------------------------------
-   COMPLETE BROWSER-MEMORY PROCEDURAL ENGINE
-
-   No:
-   - localStorage
-   - sessionStorage
-   - IndexedDB
-   - cookies
-   - database
-   - API
-   - fetch
-   - external runtime dependency
-
-   Every generation is created in JavaScript memory.
+   PROCEDURAL FICTIONAL PORTFOLIO RENDERER
+   ------------------------------------------------------------
+   Browser memory only.
+   No database.
+   No API.
+   No cookies.
+   No localStorage.
+   No sessionStorage.
+   No IndexedDB.
+   No fetch.
+   No network dependency.
    ============================================================ */
 
 (() => {
@@ -22,70 +20,56 @@
     const CONFIG =
         window.__ABSURD_CONFIG__;
 
-    if (
-        !CONFIG ||
-        typeof CONFIG !== "object"
-    ) {
-        document.body.innerHTML = `
-            <main style="
-                min-height:100vh;
-                display:grid;
-                place-items:center;
-                padding:32px;
-                font-family:system-ui,sans-serif;
-            ">
-                <article style="
-                    max-width:720px;
-                    width:100%;
-                    padding:32px;
-                    border:1px solid #333;
-                    border-radius:18px;
-                    background:#111;
-                    color:#fff;
-                ">
-                    <small>CONFIGURATION ERROR</small>
-                    <h1>Portfolio configuration missing.</h1>
-                    <p>
-                        Run generator.py again and reload the generated page.
-                    </p>
-                </article>
-            </main>
-        `;
-        return;
-    }
+    /* ========================================================
+       RUNTIME
+       ======================================================== */
 
     const runtime = {
+        generatedSignatures: new Set(),
         current: null,
         generationCount: 0,
-        generatedSignatures: new Set(),
         history: [],
         npcIndex: new Map(),
-        worldIndex: new Map(),
-        usedNPCNames: new Set(),
+        worldIndex: new Map()
     };
 
 
     /* ========================================================
-       DOM
+       DOM HELPERS
        ======================================================== */
 
     const $ = (
         selector,
         root = document
-    ) =>
-        root.querySelector(
-            selector
-        );
+    ) => root.querySelector(selector);
 
     const $$ = (
         selector,
         root = document
-    ) =>
-        [
-            ...root.querySelectorAll(
-                selector
-            ),
-        ];
+    ) => [
+        ...root.querySelectorAll(selector)
+    ];
+
+
+    /* ========================================================
+       CONFIG SAFETY
+       ======================================================== */
+
+    if (
+        !CONFIG ||
+        typeof CONFIG !== "object"
+    ) {
+        document.body.innerHTML = `
+            <main class="noscript">
+                <h1>Configuration Missing</h1>
+                <p>
+                    The procedural portfolio configuration could not be loaded.
+                </p>
+            </main>
+        `;
+
+        return;
+    }
 
 
     /* ========================================================
@@ -93,29 +77,31 @@
        ======================================================== */
 
     function random() {
-        if (
-            window.crypto &&
-            typeof window.crypto.getRandomValues ===
-                "function"
-        ) {
-            const values =
-                new Uint32Array(2);
+        try {
+            if (
+                window.crypto &&
+                typeof window.crypto.getRandomValues === "function"
+            ) {
+                const buffer =
+                    new Uint32Array(2);
 
-            window.crypto.getRandomValues(
-                values
-            );
+                window.crypto.getRandomValues(
+                    buffer
+                );
 
-            const high =
-                values[0] / 4294967296;
+                const high =
+                    buffer[0] / 4294967296;
 
-            const low =
-                values[1] / 4294967296;
+                const low =
+                    buffer[1] / 4294967296;
 
-            return (
-                high +
-                low /
-                    4294967296
-            );
+                return (
+                    (high + low / 4294967296) %
+                    1
+                );
+            }
+        } catch {
+            /* Fall through. */
         }
 
         return Math.random();
@@ -126,11 +112,34 @@
         min,
         max
     ) {
+        min = Math.ceil(
+            Number(min) || 0
+        );
+
+        max = Math.floor(
+            Number(max) || 0
+        );
+
+        if (max < min) {
+            [
+                min,
+                max
+            ] = [
+                max,
+                min
+            ];
+        }
+
         return (
             Math.floor(
                 random() *
-                    (max - min + 1)
-            ) + min
+                (
+                    max -
+                    min +
+                    1
+                )
+            ) +
+            min
         );
     }
 
@@ -141,7 +150,7 @@
     ) {
         if (
             !Array.isArray(values) ||
-            !values.length
+            values.length === 0
         ) {
             return fallback;
         }
@@ -159,103 +168,112 @@
         values,
         count
     ) {
-        if (
-            !Array.isArray(values) ||
-            !values.length
+        const source =
+            Array.isArray(values)
+                ? [
+                    ...values
+                ]
+                : [];
+
+        const target =
+            Math.max(
+                0,
+                Math.min(
+                    Number(count) || 0,
+                    source.length
+                )
+            );
+
+        const output = [];
+
+        while (
+            source.length &&
+            output.length < target
         ) {
-            return [];
-        }
-
-        const copy =
-            [...values];
-
-        const amount = Math.max(
-            0,
-            Math.min(
-                Number(count) || 0,
-                copy.length
-            )
-        );
-
-        for (
-            let i = copy.length - 1;
-            i > 0;
-            i--
-        ) {
-            const j =
+            const index =
                 integer(
                     0,
-                    i
+                    source.length - 1
                 );
 
-            [
-                copy[i],
-                copy[j],
-            ] = [
-                copy[j],
-                copy[i],
-            ];
+            output.push(
+                source.splice(
+                    index,
+                    1
+                )[0]
+            );
         }
 
-        return copy.slice(
-            0,
-            amount
-        );
+        return output;
     }
 
 
     function weightedChoice(
-        entries
+        values
     ) {
-        const valid =
-            Array.isArray(entries)
-                ? entries.filter(
-                      item =>
-                          item &&
-                          Number(
-                              item.weight
-                          ) > 0
-                  )
-                : [];
-
-        if (!valid.length) {
-            return null;
+        if (
+            !Array.isArray(values) ||
+            !values.length
+        ) {
+            return "";
         }
 
         const total =
-            valid.reduce(
+            values.reduce(
                 (
                     sum,
                     item
                 ) =>
                     sum +
-                    Number(
-                        item.weight
+                    Math.max(
+                        0,
+                        Number(
+                            item.weight
+                        ) || 0
                     ),
                 0
             );
 
-        let cursor =
-            random() * total;
-
-        for (const item of valid) {
-            cursor -= Number(
-                item.weight
+        if (
+            total <= 0
+        ) {
+            return pick(
+                values.map(
+                    item => item.value
+                )
             );
+        }
 
-            if (cursor <= 0) {
+        let cursor =
+            random() *
+            total;
+
+        for (
+            const item of values
+        ) {
+            cursor -=
+                Math.max(
+                    0,
+                    Number(
+                        item.weight
+                    ) || 0
+                );
+
+            if (
+                cursor <= 0
+            ) {
                 return item.value;
             }
         }
 
-        return valid[
-            valid.length - 1
+        return values[
+            values.length - 1
         ].value;
     }
 
 
     /* ========================================================
-       SAFE TEXT
+       TEXT HELPERS
        ======================================================== */
 
     function safe(
@@ -272,28 +290,30 @@
         const text =
             String(value).trim();
 
-        return text || fallback;
+        return text ||
+            fallback;
     }
 
 
     function safeArray(
         value
     ) {
-        if (!Array.isArray(value)) {
+        if (
+            !Array.isArray(value)
+        ) {
             return [];
         }
 
         return value
             .filter(
                 item =>
-                    typeof item ===
-                    "string"
+                    item !== null &&
+                    item !== undefined
             )
             .map(
                 item =>
-                    item.trim()
-            )
-            .filter(Boolean);
+                    String(item)
+            );
     }
 
 
@@ -303,7 +323,12 @@
         return [
             ...new Set(
                 safeArray(values)
-            ),
+                    .map(
+                        value =>
+                            value.trim()
+                    )
+                    .filter(Boolean)
+            )
         ];
     }
 
@@ -367,25 +392,37 @@
         }
 
         return (
-            text.charAt(0).toUpperCase() +
+            text.charAt(0)
+                .toUpperCase() +
             text.slice(1)
         );
     }
 
 
     function initials(
-        name
+        value
     ) {
-        const parts =
-            safe(name)
+        const words =
+            safe(
+                value,
+                "Unknown"
+            )
                 .split(/\s+/)
                 .filter(Boolean);
 
-        return parts
+        if (
+            words.length === 1
+        ) {
+            return words[0]
+                .slice(0, 2)
+                .toUpperCase();
+        }
+
+        return words
             .slice(0, 2)
             .map(
-                part =>
-                    part.charAt(0)
+                word =>
+                    word.charAt(0)
             )
             .join("")
             .toUpperCase();
@@ -399,20 +436,19 @@
             Number(value);
 
         if (
-            !Number.isFinite(
-                number
-            )
+            !Number.isFinite(number)
         ) {
             return "0";
         }
 
         return new Intl.NumberFormat(
-            "en",
+            undefined,
             {
                 notation:
-                    "compact",
-                maximumFractionDigits:
-                    1,
+                    Math.abs(number) >= 10000
+                        ? "compact"
+                        : "standard",
+                maximumFractionDigits: 1
             }
         ).format(number);
     }
@@ -428,11 +464,54 @@
             return "";
         }
 
-        return text.endsWith(
-            "."
+        return (
+            text.charAt(0)
+                .toUpperCase() +
+            text.slice(1)
+        ).replace(
+            /([.!?])?$/,
+            match =>
+                match
+                    ? match
+                    : "."
+        );
+    }
+
+
+    function articleFor(
+        value
+    ) {
+        const text =
+            safe(value);
+
+        if (!text) {
+            return "a";
+        }
+
+        const lower =
+            text.toLowerCase();
+
+        if (
+            /^(hour|honest|honor|heir)/.test(
+                lower
+            )
+        ) {
+            return "an";
+        }
+
+        if (
+            /^(user|university|unicorn|unique|useful|usual)/.test(
+                lower
+            )
+        ) {
+            return "a";
+        }
+
+        return /^[aeiou]/.test(
+            lower
         )
-            ? text
-            : `${text}.`;
+            ? "an"
+            : "a";
     }
 
 
@@ -446,13 +525,13 @@
             String(value);
 
         for (
-            let i = 0;
-            i < text.length;
-            i++
+            let index = 0;
+            index < text.length;
+            index++
         ) {
             hash ^=
                 text.charCodeAt(
-                    i
+                    index
                 );
 
             hash =
@@ -464,34 +543,69 @@
 
         return (
             hash >>> 0
-        ).toString(16);
+        )
+            .toString(16)
+            .padStart(
+                8,
+                "0"
+            );
     }
 
 
     function randomId(
-        prefix
+        prefix = "ID"
     ) {
-        return `${prefix}-${Date.now()
-            .toString(36)}-${integer(
-            100000,
-            999999
-        )}`;
+        return (
+            prefix +
+            "-" +
+            integer(
+                100000,
+                999999
+            ) +
+            "-" +
+            integer(
+                1000,
+                9999
+            )
+        );
+    }
+
+
+    function randomCode(
+        prefix = "INC"
+    ) {
+        return (
+            prefix +
+            "-" +
+            integer(
+                10,
+                99
+            ) +
+            "-" +
+            integer(
+                100,
+                999
+            )
+        );
     }
 
 
     function randomDateLabel(
-        startYear = 2018,
-        endYear = 2026
+        yearMin = 2019,
+        yearMax = 2026
     ) {
         const year =
             integer(
-                startYear,
-                endYear
+                yearMin,
+                yearMax
             );
 
         const month =
             String(
-                integer(1, 12)
+                integer(
+                    1,
+                    12
+                )
             ).padStart(
                 2,
                 "0"
@@ -499,26 +613,16 @@
 
         const day =
             String(
-                integer(1, 28)
+                integer(
+                    1,
+                    28
+                )
             ).padStart(
                 2,
                 "0"
             );
 
         return `${year}-${month}-${day}`;
-    }
-
-
-    function randomCode(
-        prefix
-    ) {
-        return `${prefix}-${String(
-            integer(10, 99)
-        )}${String(
-            integer(100, 999)
-        )}-${String(
-            integer(10, 99)
-        )}`;
     }
 
 
@@ -530,16 +634,16 @@
         key
     ) {
         return Array.isArray(
-            CONFIG?.pools?.[key]
+            CONFIG?.vocabulary?.[key]
         )
-            ? CONFIG.pools[key]
+            ? CONFIG.vocabulary[key]
             : [];
     }
 
 
     function configPick(
         key,
-        fallback
+        fallback = ""
     ) {
         return pick(
             pool(key),
@@ -570,6 +674,21 @@
     }
 
 
+    function contentLimit(
+        key,
+        fallback
+    ) {
+        const value =
+            CONFIG?.content_limits?.[key];
+
+        return Number.isFinite(
+            Number(value)
+        )
+            ? Number(value)
+            : fallback;
+    }
+
+
     /* ========================================================
        WORLD GENERATION
        ======================================================== */
@@ -580,112 +699,160 @@
                 "generated_world_seeds"
             );
 
-        if (!seeds.length) {
-            throw new Error(
-                "World seed pool is empty."
-            );
-        }
-
         const source =
-            pick(
-                seeds,
-                seeds[0]
-            );
+            seeds.length
+                ? pick(seeds)
+                : {
+                    name:
+                        "Unknown World",
+                    genre:
+                        "Experimental",
+                    classification:
+                        "Unclassified",
+                    description:
+                        "A world generated after the world generator became confused.",
+                    sky:
+                        "uncertain",
+                    technology:
+                        "unknown infrastructure",
+                    socialRule:
+                        "Document everything.",
+                    rule:
+                        "Do not trust unexplained systems.",
+                    danger:
+                        "Unexpected complexity.",
+                    conflict:
+                        "The system is investigating itself.",
+                    population:
+                        100000,
+                    age:
+                        1,
+                    stability:
+                        50,
+                    rules:
+                        [],
+                    factions:
+                        []
+                };
 
         const world = {
-            id: randomId(
-                "world"
-            ),
+            id:
+                randomId("WORLD"),
 
-            name: safe(
-                source.name,
-                "Unknown World"
-            ),
+            name:
+                safe(
+                    source.name,
+                    "Unknown World"
+                ),
 
-            genre: safe(
-                source.genre,
-                "Unknown Genre"
-            ),
+            genre:
+                safe(
+                    source.genre,
+                    "Experimental"
+                ),
 
             classification:
                 safe(
                     source.classification,
-                    "UNCLASSIFIED"
+                    "Unclassified"
                 ),
 
-            description: safe(
-                source.description
-            ),
+            description:
+                safe(
+                    source.description,
+                    "A fictional world."
+                ),
 
-            sky: safe(
-                source.sky
-            ),
+            sky:
+                safe(
+                    source.sky,
+                    "unknown"
+                ),
 
-            technology: safe(
-                source.technology
-            ),
+            technology:
+                safe(
+                    source.technology,
+                    "unknown technology"
+                ),
 
-            socialRule: safe(
-                source.socialRule
-            ),
+            socialRule:
+                safe(
+                    source.socialRule,
+                    "Document everything."
+                ),
 
-            rule: safe(
-                source.rule
-            ),
+            rule:
+                safe(
+                    source.rule,
+                    "Do not trust unexplained systems."
+                ),
 
-            danger: safe(
-                source.danger,
-                "Unknown"
-            ),
+            danger:
+                safe(
+                    source.danger,
+                    "Unexpected complexity."
+                ),
 
-            conflict: safe(
-                source.conflict
-            ),
+            conflict:
+                safe(
+                    source.conflict,
+                    "The world is currently under investigation."
+                ),
 
             population:
                 Number(
                     source.population
-                ) || integer(
-                    100000,
-                    10000000
-                ),
+                ) || 100000,
 
             age:
                 Number(
                     source.age
-                ) || integer(
-                    50,
-                    5000
-                ),
+                ) || 1,
 
             stability:
                 Number(
                     source.stability
-                ) || integer(
-                    20,
-                    90
+                ) || 50,
+
+            rules:
+                sample(
+                    safeArray(
+                        source.rules
+                    ),
+                    contentLimit(
+                        "world_rule_cards",
+                        5
+                    )
                 ),
 
-            rules: sample(
-                safeArray(
-                    source.rules
-                ),
-                integer(
-                    4,
-                    5
-                )
-            ),
-
-            factions: sample(
-                safeArray(
-                    source.factions
-                ),
-                integer(
-                    4,
-                    5
-                )
-            ),
+            factions:
+                sample(
+                    safeArray(
+                        source.factions
+                    ),
+                    contentLimit(
+                        "world_faction_cards",
+                        5
+                    )
         };
+
+        if (
+            !world.rules.length
+        ) {
+            world.rules = [
+                "Document every production change.",
+                "Do not deploy unexplained infrastructure."
+            ];
+        }
+
+        if (
+            !world.factions.length
+        ) {
+            world.factions = [
+                "Independent Systems Guild",
+                "Archive Operations"
+            ];
+        }
 
         runtime.worldIndex.set(
             world.id,
@@ -711,47 +878,18 @@
             );
 
         let source =
-            pick(
-                seeds,
-                null
-            );
+            seeds.length
+                ? pick(seeds)
+                : null;
 
-        let first =
-            safe(
-                source?.first,
-                configPick(
-                    "npc_first_names",
-                    "Unknown"
-                )
-            );
+        let name = "";
 
-        let last =
-            safe(
-                source?.last,
-                configPick(
-                    "npc_last_names",
-                    "Contact"
-                )
-            );
-
-        let name =
-            `${first} ${last}`;
-
-        let attempts = 0;
-
-        while (
-            usedNames.has(name) ||
-            runtime.usedNPCNames.has(
-                name
-            )
+        for (
+            let attempt = 0;
+            attempt < 50;
+            attempt++
         ) {
-            source =
-                pick(
-                    seeds,
-                    source
-                );
-
-            first =
+            const first =
                 safe(
                     source?.first,
                     configPick(
@@ -760,158 +898,192 @@
                     )
                 );
 
-            last =
+            const last =
                 safe(
                     source?.last,
                     configPick(
                         "npc_last_names",
-                        "Contact"
+                        "Person"
                     )
                 );
 
             name =
                 `${first} ${last}`;
 
-            attempts++;
-
-            if (attempts > 50) {
-                name =
-                    `${first} ${last} ${integer(
-                        2,
-                        999
-                    )}`;
+            if (
+                !usedNames.has(name)
+            ) {
                 break;
             }
+
+            source =
+                seeds.length
+                    ? pick(seeds)
+                    : null;
+        }
+
+        if (
+            usedNames.has(name)
+        ) {
+            name =
+                `${configPick(
+                    "npc_first_names",
+                    "Unknown"
+                )} ${configPick(
+                    "npc_last_names",
+                    "Person"
+                )} ${integer(
+                    10,
+                    99
+                )}`;
         }
 
         usedNames.add(
             name
         );
 
-        runtime.usedNPCNames.add(
-            name
-        );
-
-        const npc = {
-            id: randomId(
-                "npc"
-            ),
-
-            name,
-
-            first,
-
-            last,
-
-            role: safe(
+        const role =
+            safe(
                 source?.role,
                 configPick(
                     "npc_roles",
-                    "Systems Client"
+                    "Systems Officer"
                 )
-            ),
+            );
 
-            type: safe(
+        const type =
+            safe(
                 source?.type,
                 configPick(
                     "npc_types",
-                    "unknown contact"
+                    "systems investigator"
                 )
-            ),
+            );
 
-            trait: safe(
+        const trait =
+            safe(
                 source?.trait,
                 configPick(
                     "npc_traits",
-                    "keeps unusual records"
+                    "calm under pressure"
                 )
-            ),
+            );
 
-            relationship:
-                safe(
-                    source?.relationship,
-                    configPick(
-                        "npc_relationships",
-                        "contact"
-                    )
-                ),
+        const relationship =
+            safe(
+                source?.relationship,
+                configPick(
+                    "npc_relationships",
+                    "trusted contact"
+                )
+            );
 
-            secret: safe(
+        const secret =
+            safe(
                 source?.secret,
                 configPick(
                     "npc_secrets",
-                    "knows more than they admit"
+                    "They know something important."
                 )
-            ),
+            );
 
-            dialogue: safe(
+        const dialogue =
+            safe(
                 source?.dialogue,
                 configPick(
                     "npc_dialogue",
-                    "Check the logs."
+                    "The system is behaving strangely."
                 )
-            ),
+            );
 
-            status: configPick(
-                "statuses",
-                "Operational"
-            ),
+        const npc = {
+            id:
+                randomId("NPC"),
+
+            name,
+
+            first:
+                name.split(" ")[0],
+
+            last:
+                name.split(" ").slice(1).join(" "),
+
+            role,
+
+            type,
+
+            trait,
+
+            relationship,
+
+            secret,
+
+            dialogue,
+
+            status:
+                configPick(
+                    "statuses",
+                    "Operational"
+                ),
 
             faction:
-                faction ||
-                pick(
-                    world.factions,
-                    "Independent"
+                safe(
+                    faction,
+                    "Independent Systems Guild"
                 ),
 
             world:
                 world.name,
 
             location:
-                pick(
-                    [
-                        "Central District",
-                        "Archive Quarter",
-                        "Maintenance Ring",
-                        "Upper Sector",
-                        "Lower Sector",
-                        "Transit Level",
-                        "Restricted Zone",
-                        "Guild Hall",
-                    ]
-                ),
+                pick([
+                    world.name,
+                    "Central Operations",
+                    "Archive District",
+                    "Outer Ring",
+                    "Night Sector",
+                    "Administrative Quarter"
+                ]),
 
             reputation:
                 integer(
-                    21,
+                    22,
                     99
                 ),
 
             danger:
-                configPick(
-                    "risk_levels",
-                    "Moderate"
-                ),
+                pick([
+                    "Low",
+                    "Moderate",
+                    "High",
+                    "Unknown"
+                ]),
 
             age:
                 integer(
-                    22,
-                    84
+                    21,
+                    74
                 ),
 
             encounters:
                 integer(
                     1,
-                    27
+                    37
                 ),
 
-            biography: "",
+            biography:
+                "",
 
-            rumors: [],
+            rumors:
+                [],
 
-            projects: [],
-
-            experiences: [],
+            connections:
+                {
+                    projects: [],
+                    experiences: [],
+                    incidents: [],
+                    quests: []
+                }
         };
 
         npc.biography =
@@ -939,9 +1111,15 @@
         npc,
         world
     ) {
-        return `${npc.name} serves as ${articleFor(
-            npc.role
-        )} ${npc.role} in ${world.name}. Known for being ${npc.trait}, they have become involved in ${npc.relationship} assignments where infrastructure failures tend to become political problems.`;
+        return compactText(
+            `${npc.name} is ${articleFor(
+                npc.type
+            )} ${npc.type} serving as ${articleFor(
+                npc.role
+            )} ${npc.role} in ${world.name}.`,
+            `Their working style is ${npc.trait}, which makes them unusually useful during operational incidents.`,
+            `Their current relationship with the portfolio owner is described as ${npc.relationship}.`
+        );
     }
 
 
@@ -949,20 +1127,28 @@
         npc,
         world
     ) {
-        const rumorPool = [
-            `${npc.name} ${npc.secret}.`,
-            `People in ${world.name} claim ${npc.name} knows a route that does not appear on any official map.`,
-            `${npc.name} reportedly keeps an emergency copy of something the organization insists does not exist.`,
-            `A previous incident mentions ${npc.name} without explaining why.`,
-        ];
+        const first =
+            pick([
+                `${npc.name} knows more about ${world.conflict} than they admit.`,
+                `${npc.name} keeps an undocumented backup somewhere in ${world.name}.`,
+                `${npc.name} once prevented a larger incident without filing a ticket.`,
+                `${npc.name} has been seen talking to infrastructure after midnight.`,
+                `${npc.name} may have access to an older version of reality.`
+            ]);
 
-        return sample(
-            rumorPool,
-            integer(
-                2,
-                2
-            )
-        );
+        const second =
+            pick([
+                "The official archive denies this.",
+                "No faction has accepted responsibility.",
+                "The incident was later classified.",
+                "Several witnesses disagree.",
+                "The logs are suspiciously incomplete."
+            ]);
+
+        return [
+            first,
+            second
+        ];
     }
 
 
@@ -974,7 +1160,7 @@
         world,
         faction,
         specialties,
-        npcs
+        npc
     ) {
         const role =
             configPick(
@@ -982,58 +1168,33 @@
                 "Systems Engineer"
             );
 
-        const organization =
-            faction ||
-            pick(
-                world.factions,
-                "Independent Systems Group"
-            );
-
-        const relatedNPC =
-            pick(
-                npcs,
-                null
+        const technologies =
+            configSample(
+                "specialties",
+                integer(
+                    contentLimit(
+                        "experience_technologies_min",
+                        4
+                    ),
+                    contentLimit(
+                        "experience_technologies_max",
+                        7
+                    )
+                )
             );
 
         const years =
             integer(
                 1,
-                7
-            );
-
-        const technologies =
-            configSample(
-                "specialties",
-                integer(
-                    4,
-                    7
-                )
-            );
-
-        const opening =
-            configPick(
-                "experience_openings",
-                "Joined during an unusual operational period."
-            );
-
-        const incident =
-            configPick(
-                "experience_incidents",
-                "an unexpected system event"
-            );
-
-        const lesson =
-            configPick(
-                "experience_lessons",
-                "systems should fail visibly"
+                9
             );
 
         const experience = {
-            id: randomId(
-                "experience"
-            ),
+            id:
+                randomId("EXP"),
 
-            organization,
+            organization:
+                faction,
 
             world:
                 world.name,
@@ -1048,135 +1209,135 @@
                     "Operational"
                 ),
 
-            technologies,
+            technologies:
+                technologies.length
+                    ? technologies
+                    : specialties.slice(
+                        0,
+                        4
+                    ),
 
-            npc:
-                relatedNPC?.name ||
-                "Unknown Contact",
-
-            npcId:
-                relatedNPC?.id ||
-                "",
-
-            opening,
+            opening:
+                configPick(
+                    "experience_openings",
+                    "Joined during a difficult transition."
+                ),
 
             hook:
-                configPick(
-                    "story_hooks",
-                    "The system was supposed to be temporary."
+                pick(
+                    CONFIG?.narrative_settings?.hooks,
+                    "A strange assignment."
                 ),
 
-            incident,
+            incident:
+                configPick(
+                    "experience_incidents",
+                    "A production incident occurred."
+                ),
 
             turn:
-                configPick(
-                    "story_turns",
-                    "The investigation exposed another dependency."
+                pick(
+                    CONFIG?.narrative_settings?.turns,
+                    "The original requirements changed."
                 ),
 
-            lesson,
+            lesson:
+                configPick(
+                    "experience_lessons",
+                    "Documentation matters."
+                ),
 
             closing:
-                configPick(
-                    "closing_lines",
-                    "The system became stable enough to be boring."
+                pick(
+                    CONFIG?.narrative_settings?.closings,
+                    "The system survived."
                 ),
 
-            narrative: {},
+            npc:
+                npc,
 
-            achievements: [],
+            narrative:
+                {},
 
-            incidents: [],
+            achievements:
+                [],
+
+            incidents:
+                []
         };
 
         experience.narrative =
             buildExperienceNarrative(
-                experience,
-                world,
-                relatedNPC
+                experience
             );
 
         experience.achievements =
             buildExperienceAchievements(
                 experience,
-                world
+                npc
             );
 
-        experience.incidents =
-            sample(
-                [
-                    incident,
-                    "deployment review",
-                    "capacity investigation",
-                    "recovery exercise",
-                ],
-                integer(
-                    2,
-                    4
-                )
-            );
-
-        if (relatedNPC) {
-            relatedNPC.experiences.push(
-                experience.id
-            );
-        }
+        experience.incidents = [
+            experience.incident,
+            experience.turn
+        ];
 
         return experience;
     }
 
 
     function buildExperienceNarrative(
-        experience,
-        world,
-        npc
+        experience
     ) {
-        const npcName =
-            npc?.name ||
-            "the assigned client";
+        const npc =
+            experience.npc;
 
         return {
-            summary: `${experience.opening} The assignment connected ${experience.role.toLowerCase()} work with ${npcName}, operating inside ${world.name}.`,
+            summary:
+                compactText(
+                    experience.opening,
+                    `The assignment involved ${experience.role.toLowerCase()} work across ${experience.world}.`
+                ),
 
-            context: `The environment depended on ${world.technology}. The team inherited systems shaped by the local rule that ${world.rule.toLowerCase()}`,
+            context:
+                compactText(
+                    `The main contact was ${npc.name}, ${npc.role.toLowerCase()}.`,
+                    `${capitalize(
+                        npc.name
+                    )} was listed as the ${npc.relationship}.`
+                ),
 
-            incident: `During routine operations, ${experience.incident}. The event initially appeared unrelated to the main assignment.`,
+            incident:
+                sentence(
+                    experience.incident
+                ),
 
-            response: `The response focused on observability, controlled recovery, ownership boundaries and ${pick(
-                experience.technologies,
-                "automation"
-            )}. ${experience.turn}`,
+            response:
+                compactText(
+                    `The response combined ${experience.technologies
+                        .slice(0, 3)
+                        .join(", ")}.`,
+                    experience.turn
+                ),
 
-            lesson: `${capitalize(
-                experience.lesson
-            )}. ${experience.closing}`,
+            lesson:
+                sentence(
+                    experience.lesson
+                )
         };
     }
 
 
     function buildExperienceAchievements(
         experience,
-        world
+        npc
     ) {
-        const achievements = [
-            `Stabilized an operational workflow inside ${world.name}.`,
-            `Introduced stronger observability around ${pick(
-                experience.technologies,
-                "core infrastructure"
-            )}.`,
-            `Reduced manual intervention during incident recovery.`,
-            `Documented a dependency previously known only by one operator.`,
-            `Created a repeatable deployment and rollback procedure.`,
-            `Connected technical decisions to measurable operational outcomes.`,
+        return [
+            `Stabilized the ${experience.world} operational workflow.`,
+            `Built a repeatable process around ${experience.technologies[0] || "automation"}.`,
+            `Created a direct technical working relationship with ${npc.name}.`,
+            `Converted an incident into documented operational knowledge.`
         ];
-
-        return sample(
-            achievements,
-            integer(
-                3,
-                4
-            )
-        );
     }
 
 
@@ -1190,16 +1351,10 @@
         specialties,
         npcs
     ) {
-        const npc =
-            pick(
-                npcs,
-                null
-            );
-
         const projectType =
             configPick(
                 "project_types",
-                "platform"
+                "Platform"
             );
 
         const baseName =
@@ -1208,106 +1363,81 @@
                 "Atlas"
             );
 
-        const suffixes = [
-            "Core",
-            "Prime",
-            "Zero",
-            "X",
-            "Protocol",
-            "Grid",
-            "Engine",
-            "Network",
-            "Archive",
-            "OS",
-            "One",
-            "Delta",
-            "Black",
-            "Field",
-            "Vault",
-        ];
-
-        const name =
-            `${baseName} ${pick(
-                suffixes,
-                "Core"
-            )}`;
-
-        const skills =
-            uniqueStrings(
-                sample(
-                    specialties.length
-                        ? specialties
-                        : pool(
-                              "specialties"
-                          ),
-                    integer(
-                        4,
-                        7
-                    )
-                )
-            );
-
-        const problem =
-            configPick(
-                "project_problems",
-                "the existing process had become unreliable"
-            );
-
-        const solution =
-            configPick(
-                "project_solutions",
-                "a modular operational platform"
-            );
-
-        const failure =
-            configPick(
-                "project_failures",
-                "the first deployment behaved unexpectedly"
-            );
-
-        const outcome =
-            configPick(
-                "project_outcomes",
-                "the system became operationally useful"
-            );
-
-        const complexity =
-            integer(
-                38,
-                99
-            );
+        const suffix =
+            pick([
+                "Core",
+                "Prime",
+                "Grid",
+                "X",
+                "Protocol",
+                "Network",
+                "Engine",
+                "Works",
+                "OS",
+                "Node",
+                "Vault",
+                "Layer"
+            ]);
 
         const project = {
-            id: randomId(
-                "project"
-            ),
+            id:
+                randomId("PROJECT"),
 
-            name,
+            name:
+                `${baseName} ${suffix}`,
 
-            type: projectType,
+            type:
+                projectType,
 
-            industry,
+            industry:
+                industry,
 
             world:
                 world.name,
 
-            skills,
+            skills:
+                configSample(
+                    "specialties",
+                    integer(
+                        contentLimit(
+                            "project_technologies_min",
+                            3
+                        ),
+                        contentLimit(
+                            "project_technologies_max",
+                            7
+                        )
+                    )
+                ),
 
             client:
-                npc?.name ||
-                "Independent Client",
+                npcs.length
+                    ? pick(npcs)
+                    : null,
 
-            clientId:
-                npc?.id ||
-                "",
+            problem:
+                configPick(
+                    "project_problems",
+                    "The system was difficult to operate."
+                ),
 
-            problem,
+            solution:
+                configPick(
+                    "project_solutions",
+                    "The system was redesigned."
+                ),
 
-            solution,
+            failure:
+                configPick(
+                    "project_failures",
+                    "The first version failed."
+                ),
 
-            failure,
-
-            outcome,
+            outcome:
+                configPick(
+                    "project_outcomes",
+                    "The final system became stable."
+                ),
 
             status:
                 configPick(
@@ -1315,56 +1445,61 @@
                     "Operational"
                 ),
 
-            complexity,
+            complexity:
+                integer(
+                    42,
+                    99
+                ),
 
             users:
                 integer(
-                    250,
-                    99000000
+                    800,
+                    9000000
                 ),
 
             duration:
                 integer(
                     1,
-                    26
+                    18
                 ),
 
-            narrative: {},
+            narrative:
+                {},
 
-            technicalNotes: [],
-
-            incidents: [],
+            technicalNotes:
+                []
         };
+
+        if (
+            !project.skills.length
+        ) {
+            project.skills =
+                specialties.slice(
+                    0,
+                    4
+                );
+        }
 
         project.narrative =
             buildProjectNarrative(
-                project,
-                world,
-                npc
-            );
-
-        project.technicalNotes =
-            buildTechnicalNotes(
                 project
             );
 
-        project.incidents =
+        project.technicalNotes =
             sample(
-                [
-                    project.failure,
-                    "capacity review",
-                    "security review",
-                    "deployment anomaly",
-                    "unexpected dependency",
-                ],
-                integer(
-                    2,
+                pool(
+                    "project_notes"
+                ),
+                contentLimit(
+                    "project_notes",
                     4
                 )
             );
 
-        if (npc) {
-            npc.projects.push(
+        if (
+            project.client
+        ) {
+            project.client.connections.projects.push(
                 project.id
             );
         }
@@ -1374,65 +1509,71 @@
 
 
     function buildProjectNarrative(
-        project,
-        world,
-        npc
+        project
     ) {
         const client =
-            npc?.name ||
-            "the client";
+            project.client;
 
         return {
-            summary: `${project.name} is ${articleFor(
-                project.type
-            )} ${project.type} built for ${project.industry} operations in ${world.name}.`,
+            summary:
+                compactText(
+                    `${project.name} is ${articleFor(
+                        project.type
+                    )} ${project.type.toLowerCase()} built for ${project.industry}.`,
+                    `It operates in ${project.world}.`
+                ),
 
-            problem: `The original environment had a fundamental problem: ${project.problem}. The operational consequence was becoming more expensive than the software itself.`,
+            problem:
+                sentence(
+                    project.problem
+                ),
 
-            architecture: `The system combined ${project.skills
-                .slice(0, 4)
-                .join(
-                    ", "
-                )} into a controlled architecture with explicit ownership, observable failure paths and recoverable deployment stages.`,
+            architecture:
+                compactText(
+                    `The architecture combines ${project.skills
+                        .slice(0, 4)
+                        .join(", ")}.`,
+                    `The design prioritizes visible failure and recoverable operations.`
+                ),
 
-            client: `${client}, acting as ${npc?.role || "the client"}, became the primary operational stakeholder. Their requirement was simple: make the system useful without creating another mystery.`,
+            client:
+                client
+                    ? compactText(
+                        `${client.name} served as the primary stakeholder.`,
+                        `${capitalize(
+                            client.name
+                        )} is a ${client.type}.`
+                    )
+                    : "Primary stakeholder information unavailable.",
 
-            failure: `The first serious failure occurred when ${project.failure}. The event exposed a dependency that had not appeared in the original requirements.`,
+            failure:
+                sentence(
+                    project.failure
+                ),
 
-            solution: `${capitalize(
-                project.solution
-            )}. The redesign added explicit boundaries, operational visibility and a recovery strategy.`,
+            solution:
+                sentence(
+                    project.solution
+                ),
 
-            outcome: `${capitalize(
-                project.outcome
-            )}. The final system became part of the fictional world's infrastructure rather than another isolated experiment.`,
+            outcome:
+                sentence(
+                    project.outcome
+                )
         };
     }
 
 
-    function buildTechnicalNotes(
-        project
+    function compactText(
+        ...parts
     ) {
-        const notes = [
-            `Architecture complexity: ${project.complexity}/100.`,
-            `Primary implementation surface: ${project.skills
-                .slice(0, 3)
-                .join(", ")}.`,
-            `Designed for approximately ${formatNumber(
-                project.users
-            )} users or records.`,
-            `Initial delivery window: ${project.duration} months.`,
-            `Failure domains were separated before production release.`,
-            `Operational events were designed to remain traceable.`,
-        ];
-
-        return sample(
-            notes,
-            integer(
-                3,
-                4
+        return parts
+            .map(
+                part =>
+                    safe(part)
             )
-        );
+            .filter(Boolean)
+            .join(" ");
     }
 
 
@@ -1446,26 +1587,21 @@
         projects
     ) {
         const witness =
-            pick(
-                npcs,
-                null
-            );
+            npcs.length
+                ? pick(npcs)
+                : null;
 
         const project =
-            pick(
-                projects,
-                null
-            );
+            projects.length
+                ? pick(projects)
+                : null;
 
         const incident = {
-            id: randomId(
-                "incident"
-            ),
+            id:
+                randomId("INCIDENT"),
 
             code:
-                randomCode(
-                    "INC"
-                ),
+                randomCode("INC"),
 
             world:
                 world.name,
@@ -1473,19 +1609,19 @@
             type:
                 configPick(
                     "incident_types",
-                    "Unexpected Production Event"
+                    "Production Outage"
                 ),
 
             opener:
                 configPick(
                     "incident_openers",
-                    "The first alert looked harmless."
+                    "The incident began unexpectedly."
                 ),
 
             consequence:
                 configPick(
                     "incident_consequences",
-                    "The organization changed its recovery process."
+                    "Several systems disagreed."
                 ),
 
             risk:
@@ -1497,62 +1633,69 @@
             status:
                 configPick(
                     "statuses",
-                    "Recovered"
+                    "Under Investigation"
                 ),
 
             witness:
-                witness?.name ||
-                "Unknown Witness",
-
-            witnessId:
-                witness?.id ||
-                "",
+                witness
+                    ? witness.name
+                    : "Unknown",
 
             project:
-                project?.name ||
-                "Unassigned Project",
-
-            projectId:
-                project?.id ||
-                "",
+                project
+                    ? project.name
+                    : "Unassigned",
 
             date:
                 randomDateLabel(
-                    2020,
+                    2021,
                     2026
                 ),
 
-            narrative: {},
+            narrative:
+                {}
         };
 
         incident.narrative =
             buildIncidentNarrative(
-                incident,
-                world,
-                witness,
-                project
+                incident
             );
+
+        if (
+            witness
+        ) {
+            witness.connections.incidents.push(
+                incident.id
+            );
+        }
 
         return incident;
     }
 
 
     function buildIncidentNarrative(
-        incident,
-        world,
-        witness,
-        project
+        incident
     ) {
         return {
-            summary: `${incident.opener} The event was associated with ${project?.name || "an unknown project"} inside ${world.name}.`,
+            summary:
+                compactText(
+                    incident.opener,
+                    incident.type.toLowerCase()
+                ),
 
-            observation: `Operators observed ${incident.type.toLowerCase()} conditions while the primary system continued reporting ${incident.status.toLowerCase()}. ${witness?.name || "A witness"} provided the first useful correlation.`,
+            observation:
+                `The incident occurred in ${incident.world} and was classified as ${incident.risk.toLowerCase()} risk.`,
 
-            consequence: incident.consequence,
+            consequence:
+                sentence(
+                    incident.consequence
+                ),
 
-            response: `The response isolated the affected dependency, captured evidence and restored service using a controlled recovery path. The team avoided changing unrelated systems during the incident.`,
+            response:
+                `Operations isolated the affected workflow, preserved evidence and restored the most stable known configuration.`,
 
-            recommendation: `Preserve incident evidence, document the dependency and require explicit verification before the next deployment.`,
+            recommendation:
+                `Document the failure mode and keep ${incident.code} attached to future deployment reviews.`
         };
     }
 
@@ -1567,21 +1710,25 @@
         faction
     ) {
         const assignedBy =
-            pick(
-                npcs,
-                null
-            );
+            npcs.length
+                ? pick(npcs)
+                : null;
 
         const client =
-            pick(
-                npcs,
-                assignedBy
-            );
+            npcs.length
+                ? pick(
+                    npcs.filter(
+                        npc =>
+                            npc.id !==
+                            assignedBy?.id
+                    )
+                ) ||
+                  assignedBy
+                : null;
 
         const quest = {
-            id: randomId(
-                "quest"
-            ),
+            id:
+                randomId("QUEST"),
 
             world:
                 world.name,
@@ -1589,41 +1736,66 @@
             objective:
                 configPick(
                     "quest_objectives",
-                    "Repair the infrastructure"
+                    "Repair the infrastructure."
                 ),
 
             reward:
                 configPick(
                     "quest_rewards",
-                    "one suspicious access token"
+                    "Operational clearance"
                 ),
 
             risk:
                 configPick(
                     "risk_levels",
-                    "High"
+                    "Moderate"
                 ),
 
             client:
-                client?.name ||
-                "Unknown Client",
-
-            assignedBy:
-                assignedBy?.name ||
-                faction ||
-                "Operations Council",
+                client
+                    ? client.name
+                    : "Unknown",
 
             status:
                 configPick(
                     "statuses",
-                    "Under Observation"
+                    "In Progress"
                 ),
 
-            description: "",
+            assignedBy:
+                assignedBy
+                    ? assignedBy.name
+                    : faction,
+
+            description:
+                "",
+
+            faction
         };
 
         quest.description =
-            `Assigned by ${quest.assignedBy} on behalf of ${quest.client}. The objective is located in ${world.name}, where the current conflict involves ${world.conflict.toLowerCase()}. The operation is considered ${quest.risk.toLowerCase()} risk.`;
+            compactText(
+                `The ${faction} has assigned this objective in ${world.name}.`,
+                `Primary contact: ${quest.assignedBy}.`,
+                `Expected reward: ${quest.reward}.`
+            );
+
+        if (
+            assignedBy
+        ) {
+            assignedBy.connections.quests.push(
+                quest.id
+            );
+        }
+
+        if (
+            client &&
+            client.id !== assignedBy?.id
+        ) {
+            client.connections.quests.push(
+                quest.id
+            );
+        }
 
         return quest;
     }
@@ -1638,80 +1810,95 @@
         industry,
         experiences
     ) {
-        const now =
+        const currentYear =
             new Date().getFullYear();
 
-        const start =
+        const startYear =
+            currentYear -
             Math.max(
-                2000,
-                now -
-                    Math.max(
-                        years + 7,
-                        10
-                    )
+                4,
+                years
             );
 
-        const titles = [
-            "Entered the field",
-            "First production system",
-            "Inherited a legacy platform",
-            "First major incident",
-            "Built an internal tool",
-            "Entered cross-world operations",
-            "Started documenting everything",
-            "Designed a recovery system",
-            "Met the wrong client",
-            "Survived the impossible deployment",
-            "Archive record created",
+        const events = [
+            {
+                title:
+                    "Entered the field",
+
+                text:
+                    `Began working around ${industry} systems and discovered that documentation was usually optional until something broke.`
+            },
+
+            {
+                title:
+                    "First production system",
+
+                text:
+                    "Moved from isolated experiments into systems where other people depended on the result."
+            },
+
+            {
+                title:
+                    "Automation phase",
+
+                text:
+                    "Started replacing repetitive operational work with repeatable automation."
+            },
+
+            {
+                title:
+                    "Incident archive opened",
+
+                text:
+                    "Major failures began being documented as reusable engineering knowledge."
+            },
+
+            {
+                title:
+                    "Cross-world assignment",
+
+                text:
+                    `Accepted an assignment involving ${experiences[0]?.world || "an unknown world"}.`
+            },
+
+            {
+                title:
+                    "Infrastructure specialization",
+
+                text:
+                    "Focused increasingly on systems that remain useful when everything around them becomes complicated."
+            },
+
+            {
+                title:
+                    "Current operational state",
+
+                text:
+                    "Continues building systems, investigating incidents and refusing to call production architecture temporary."
+            }
         ];
 
-        const events =
-            experiences.map(
-                experience => ({
-                    year:
-                        integer(
-                            start,
-                            now
-                        ),
-
-                    title:
-                        pick(
-                            titles
-                        ),
-
-                    text: `Worked as ${experience.role} for ${experience.organization}, focusing on ${industry} systems and operational reliability.`,
-                })
-            );
-
-        events.push(
-            {
+        return events.map(
+            (
+                event,
+                index
+            ) => ({
                 year:
-                    integer(
-                        start,
-                        now
-                    ),
+                    startYear +
+                    index,
+
                 title:
-                    "The portfolio became complicated",
+                    event.title,
+
                 text:
-                    "A growing collection of systems, clients and incidents eventually became a career archive.",
-            }
-        );
-
-        events.sort(
-            (a, b) =>
-                Number(a.year) -
-                Number(b.year)
-        );
-
-        return events.slice(
-            0,
-            7
+                    event.text
+            })
         );
     }
 
 
     /* ========================================================
-       UI PALETTES
+       UI DNA
        ======================================================== */
 
     function choosePalette(
@@ -1719,109 +1906,169 @@
     ) {
         const palettes = {
             executive: {
-                accent: "#8b7cff",
-                accent2: "#58e0bd",
-                background: "#090a0c",
-                surface: "#11141a",
+                accent:
+                    "#8b7cff",
+                accent2:
+                    "#58e0bd",
+                background:
+                    "#090a0c",
+                surface:
+                    "#101216"
             },
 
             terminal: {
-                accent: "#59ff9a",
-                accent2: "#2ce8d2",
-                background: "#050806",
-                surface: "#0b120e",
+                accent:
+                    "#5cff91",
+                accent2:
+                    "#00d9ff",
+                background:
+                    "#050806",
+                surface:
+                    "#0b110d"
             },
 
             rpg: {
-                accent: "#d9a441",
-                accent2: "#8f72ff",
-                background: "#100d0a",
-                surface: "#19140f",
+                accent:
+                    "#d69bff",
+                accent2:
+                    "#ffcf70",
+                background:
+                    "#0c0911",
+                surface:
+                    "#15101d"
             },
 
             manhwa: {
-                accent: "#ff4f91",
-                accent2: "#6c8cff",
-                background: "#0d0d14",
-                surface: "#151622",
+                accent:
+                    "#ff4d91",
+                accent2:
+                    "#7b7cff",
+                background:
+                    "#fff8fc",
+                surface:
+                    "#ffffff"
             },
 
             dossier: {
-                accent: "#d5b46c",
-                accent2: "#7e9db3",
-                background: "#11100d",
-                surface: "#1b1914",
+                accent:
+                    "#d8b45a",
+                accent2:
+                    "#83c7a1",
+                background:
+                    "#0d0d0b",
+                surface:
+                    "#151512"
             },
 
             research: {
-                accent: "#6ea8ff",
-                accent2: "#71e6d0",
-                background: "#081018",
-                surface: "#101b27",
+                accent:
+                    "#54b7ff",
+                accent2:
+                    "#75e0c0",
+                background:
+                    "#081018",
+                surface:
+                    "#101a23"
             },
 
             luxury: {
-                accent: "#d7b56d",
-                accent2: "#f2e4b8",
-                background: "#0c0a08",
-                surface: "#17130e",
+                accent:
+                    "#e7bd72",
+                accent2:
+                    "#f5e3bd",
+                background:
+                    "#0b0907",
+                surface:
+                    "#15110d"
             },
 
             brutalist: {
-                accent: "#f4efdf",
-                accent2: "#ff5a3d",
-                background: "#151515",
-                surface: "#242424",
+                accent:
+                    "#ff5d3a",
+                accent2:
+                    "#111111",
+                background:
+                    "#f2eee7",
+                surface:
+                    "#ffffff"
             },
 
             space: {
-                accent: "#8ea7ff",
-                accent2: "#73f0ff",
-                background: "#050711",
-                surface: "#0d1222",
+                accent:
+                    "#9c8cff",
+                accent2:
+                    "#43d9ff",
+                background:
+                    "#050612",
+                surface:
+                    "#0c0e1d"
             },
 
             detective: {
-                accent: "#c4a36a",
-                accent2: "#8db4a5",
-                background: "#11120f",
-                surface: "#1b1d18",
+                accent:
+                    "#d7a85d",
+                accent2:
+                    "#8b9cae",
+                background:
+                    "#0c0c0d",
+                surface:
+                    "#151516"
             },
 
             spellbook: {
-                accent: "#b38cff",
-                accent2: "#67e0c3",
-                background: "#0e0a15",
-                surface: "#191224",
+                accent:
+                    "#c78cff",
+                accent2:
+                    "#6fe3bf",
+                background:
+                    "#0d0813",
+                surface:
+                    "#171021"
             },
 
             underground: {
-                accent: "#f25f5c",
-                accent2: "#e8d44f",
-                background: "#090909",
-                surface: "#161616",
+                accent:
+                    "#ff765f",
+                accent2:
+                    "#f5cf65",
+                background:
+                    "#090807",
+                surface:
+                    "#15110f"
             },
 
             newspaper: {
-                accent: "#1c1c1c",
-                accent2: "#7b1e1e",
-                background: "#eee8d8",
-                surface: "#f8f4e9",
+                accent:
+                    "#171717",
+                accent2:
+                    "#8c0000",
+                background:
+                    "#eee9dd",
+                surface:
+                    "#fffdf7"
             },
 
             "operating-system": {
-                accent: "#57b8ff",
-                accent2: "#72f2c1",
-                background: "#070b10",
-                surface: "#101721",
+                accent:
+                    "#00d4ff",
+                accent2:
+                    "#7dff8d",
+                background:
+                    "#06090c",
+                surface:
+                    "#0d1318"
             },
 
             chaotic: {
-                accent: "#ff5de4",
-                accent2: "#5dfcff",
-                background: "#0a0710",
-                surface: "#17101d",
-            },
+                accent:
+                    "#ff4fd8",
+                accent2:
+                    "#55f6ff",
+                background:
+                    "#09060b",
+                surface:
+                    "#15101a"
+            }
         };
 
         return (
@@ -1833,245 +2080,272 @@
     }
 
 
-    /* ========================================================
-       UI DNA
-       ======================================================== */
-
-    function generateUIDNA({
-        world,
-        title,
-        personality,
-        genre,
-        chaos,
-        specialties,
-    }) {
+    function generateUIDNA(
+        context
+    ) {
         const families =
-            safeArray(
-                CONFIG?.ui_system
-                    ?.families
+            uniqueStrings(
+                CONFIG?.ui_system?.families
             );
 
         const layouts =
-            safeArray(
-                CONFIG?.ui_system
-                    ?.layouts
+            uniqueStrings(
+                CONFIG?.ui_system?.layouts
             );
 
         const navs =
-            safeArray(
-                CONFIG?.ui_system
-                    ?.navs
+            uniqueStrings(
+                CONFIG?.ui_system?.navs
             );
 
         const heroModes =
-            safeArray(
-                CONFIG?.ui_system
-                    ?.hero_modes
+            uniqueStrings(
+                CONFIG?.ui_system?.hero_modes
             );
 
         const densities =
-            safeArray(
-                CONFIG?.ui_system
-                    ?.densities
+            uniqueStrings(
+                CONFIG?.ui_system?.densities
             );
 
         const decorations =
+            uniqueStrings(
+                CONFIG?.ui_system?.decorations
+            );
+
+        const title =
+            safe(
+                context.title
+            ).toLowerCase();
+
+        const genre =
+            safe(
+                context.genre
+            ).toLowerCase();
+
+        const personality =
+            safe(
+                context.personality
+            ).toLowerCase();
+
+        const chaos =
+            Number(
+                context.chaos
+            ) || 50;
+
+        const specialtyText =
             safeArray(
-                CONFIG?.ui_system
-                    ?.decorations
+                context.specialties
+            )
+                .join(" ")
+                .toLowerCase();
+
+        const weights =
+            families.map(
+                family => ({
+                    value:
+                        family,
+                    weight:
+                        1
+                })
             );
 
-        const weights = [];
-
-        const add =
-            (
-                family,
-                weight
-            ) => {
-                if (
-                    families.includes(
-                        family
-                    )
-                ) {
-                    weights.push({
-                        value: family,
-                        weight,
-                    });
+        function boost(
+            names,
+            amount
+        ) {
+            weights.forEach(
+                item => {
+                    if (
+                        names.includes(
+                            item.value
+                        )
+                    ) {
+                        item.weight +=
+                            amount;
+                    }
                 }
-            };
-
-        const lower =
-            `${title} ${genre} ${personality} ${world.name}`.toLowerCase();
-
-        if (
-            /backend|platform|system|devops|infrastructure|automation/.test(
-                lower
-            )
-        ) {
-            add(
-                "terminal",
-                6
-            );
-
-            add(
-                "operating-system",
-                5
-            );
-
-            add(
-                "executive",
-                3
             );
         }
 
         if (
-            /research|science|data|experimental/.test(
-                lower
-            )
+            /backend|platform|systems|devops|infrastructure|automation/
+                .test(
+                    title +
+                    " " +
+                    specialtyText
+                )
         ) {
-            add(
-                "research",
-                6
-            );
-
-            add(
-                "space",
-                4
+            boost(
+                [
+                    "terminal",
+                    "operating-system",
+                    "executive"
+                ],
+                8
             );
         }
 
         if (
-            /security|detective|investigator|incident/.test(
-                lower
-            )
+            /research|science|data|experimental/
+                .test(
+                    genre +
+                    " " +
+                    specialtyText
+                )
         ) {
-            add(
-                "dossier",
-                5
-            );
-
-            add(
-                "detective",
-                6
-            );
-        }
-
-        if (
-            /fantasy|manhwa|magic|royal|guild/.test(
-                lower
-            )
-        ) {
-            add(
-                "rpg",
-                5
-            );
-
-            add(
-                "spellbook",
-                5
-            );
-
-            add(
-                "manhwa",
-                4
-            );
-        }
-
-        if (
-            /space|orbital|station|planet/.test(
-                lower
-            )
-        ) {
-            add(
-                "space",
+            boost(
+                [
+                    "research",
+                    "space"
+                ],
                 7
             );
+        }
 
-            add(
-                "research",
-                3
+        if (
+            /security|detective|mystery/
+                .test(
+                    genre +
+                    " " +
+                    specialtyText
+                )
+        ) {
+            boost(
+                [
+                    "dossier",
+                    "detective",
+                    "underground"
+                ],
+                7
             );
         }
 
         if (
-            chaos >= 78
+            /fantasy|manhwa|dungeon|magic/
+                .test(
+                    genre
+                )
         ) {
-            add(
-                "chaotic",
+            boost(
+                [
+                    "rpg",
+                    "spellbook",
+                    "manhwa"
+                ],
+                9
+            );
+        }
+
+        if (
+            /space|cosmic|science fiction|orbital/
+                .test(
+                    genre
+                )
+        ) {
+            boost(
+                [
+                    "space",
+                    "research"
+                ],
                 8
             );
+        }
 
-            add(
-                "brutalist",
-                4
-            );
-
-            add(
-                "underground",
-                3
+        if (
+            chaos > 78
+        ) {
+            boost(
+                [
+                    "chaotic",
+                    "brutalist",
+                    "underground"
+                ],
+                10
             );
         }
 
         if (
-            personality.includes(
-                "methodical"
-            )
+            /methodical|professional|practical/
+                .test(
+                    personality
+                )
         ) {
-            add(
-                "executive",
-                4
-            );
-
-            add(
-                "research",
-                3
+            boost(
+                [
+                    "executive",
+                    "research",
+                    "dossier"
+                ],
+                5
             );
         }
 
         if (
-            personality.includes(
-                "chaotic"
-            )
+            /chaotic|experimental/
+                .test(
+                    personality
+                )
         ) {
-            add(
-                "chaotic",
-                8
+            boost(
+                [
+                    "chaotic",
+                    "brutalist",
+                    "manhwa"
+                ],
+                6
             );
         }
 
-        const family =
+        let family =
             weightedChoice(
                 weights
-            ) ||
-            pick(
-                families,
-                "executive"
             );
+
+        /*
+         * Internal Generate button should not repeatedly
+         * produce exactly the same visual identity.
+         */
+        if (
+            runtime.current?.ui?.family &&
+            families.length > 1 &&
+            family ===
+                runtime.current.ui.family
+        ) {
+            const alternatives =
+                families.filter(
+                    item =>
+                        item !==
+                        runtime.current.ui.family
+                );
+
+            family =
+                pick(
+                    alternatives,
+                    family
+                );
+        }
 
         const palette =
             choosePalette(
                 family
             );
 
-        let density =
-            chaos > 72
+        const density =
+            chaos > 82
                 ? pick(
-                      [
-                          "compact",
-                          "normal",
-                      ]
-                  )
-                : chaos < 35
-                ? pick(
-                      [
-                          "normal",
-                          "spacious",
-                      ]
-                  )
-                : pick(
-                      densities,
-                      "normal"
-                  );
+                    densities,
+                    "compact"
+                )
+                : chaos < 30
+                    ? pick(
+                        densities,
+                        "spacious"
+                    )
+                    : pick(
+                        densities,
+                        "normal"
+                    );
 
         const ui = {
             family,
@@ -2097,10 +2371,15 @@
             density,
 
             decoration:
-                pick(
-                    decorations,
-                    "grid"
-                ),
+                chaos > 85
+                    ? pick(
+                        decorations,
+                        "scanlines"
+                    )
+                    : pick(
+                        decorations,
+                        "grid"
+                    ),
 
             radius:
                 integer(
@@ -2120,18 +2399,24 @@
             surface:
                 palette.surface,
 
-            personality,
+            personality:
+                context.personality,
 
             chaos,
 
             specialtyCount:
-                specialties.length,
+                safeArray(
+                    context.specialties
+                ).length,
 
-            longForm: false,
+            longForm:
+                false,
 
-            textHeavy: false,
+            textHeavy:
+                false,
 
-            cardFirst: true,
+            cardFirst:
+                true
         };
 
         return ui;
@@ -2139,7 +2424,7 @@
 
 
     /* ========================================================
-       PORTFOLIO
+       PORTFOLIO GENERATION
        ======================================================== */
 
     function generatePortfolio() {
@@ -2147,62 +2432,75 @@
             generateWorld();
 
         const name =
-            pick(
-                pool("names"),
+            configPick(
+                "names",
                 "Unknown Engineer"
             );
 
         const title =
-            pick(
-                pool("titles"),
+            configPick(
+                "titles",
                 "Systems Engineer"
             );
 
         const personality =
-            pick(
-                pool("personalities"),
+            configPick(
+                "personalities",
                 "methodical"
             );
 
         const industry =
-            pick(
-                pool("industries"),
-                "infrastructure"
+            configPick(
+                "industries",
+                "software infrastructure"
             );
 
         const education =
-            pick(
-                pool("education"),
-                "Systems Engineering"
+            configPick(
+                "education",
+                "Independent Systems Research"
             );
 
         const faction =
             pick(
                 world.factions,
-                "Independent Systems Group"
-            );
-
-        const specialties =
-            sample(
-                pool("specialties"),
-                integer(
-                    5,
-                    9
+                configPick(
+                    "factions",
+                    "Independent Systems Guild"
                 )
             );
 
-        const genre =
-            world.genre;
+        const specialties =
+            uniqueStrings(
+                configSample(
+                    "specialties",
+                    integer(
+                        5,
+                        9
+                    )
+                )
+            );
+
+        if (
+            !specialties.length
+        ) {
+            specialties.push(
+                "Systems Engineering",
+                "Automation",
+                "JavaScript",
+                "Python"
+            );
+        }
 
         const chaos =
             integer(
-                12,
+                18,
                 99
             );
 
         const npcCount =
             integer(
-                7,
+                8,
                 12
             );
 
@@ -2212,9 +2510,9 @@
         const npcs = [];
 
         for (
-            let i = 0;
-            i < npcCount;
-            i++
+            let index = 0;
+            index < npcCount;
+            index++
         ) {
             npcs.push(
                 generateNPC(
@@ -2228,30 +2526,42 @@
             );
         }
 
+        /*
+         * Experience is generated after NPC generation,
+         * so every career record has actual people attached.
+         */
         const experienceCount =
             integer(
                 5,
-                7
+                8
             );
 
-        const experiences =
-            [];
+        const experiences = [];
 
         for (
-            let i = 0;
-            i < experienceCount;
-            i++
+            let index = 0;
+            index < experienceCount;
+            index++
         ) {
-            experiences.push(
+            const npc =
+                pick(
+                    npcs
+                );
+
+            const experience =
                 generateExperience(
                     world,
-                    pick(
-                        world.factions,
-                        faction
-                    ),
+                    npc.faction,
                     specialties,
-                    npcs
-                )
+                    npc
+                );
+
+            experiences.push(
+                experience
+            );
+
+            npc.connections.experiences.push(
+                experience.id
             );
         }
 
@@ -2261,28 +2571,23 @@
                 9
             );
 
-        const projects =
-            [];
+        const projects = [];
 
         for (
-            let i = 0;
-            i < projectCount;
-            i++
+            let index = 0;
+            index < projectCount;
+            index++
         ) {
-            projects.push(
+            const project =
                 generateProject(
                     world,
-                    pick(
-                        [
-                            industry,
-                            ...pool(
-                                "industries"
-                            ),
-                        ]
-                    ),
+                    industry,
                     specialties,
                     npcs
-                )
+                );
+
+            projects.push(
+                project
             );
         }
 
@@ -2292,13 +2597,12 @@
                 8
             );
 
-        const incidents =
-            [];
+        const incidents = [];
 
         for (
-            let i = 0;
-            i < incidentCount;
-            i++
+            let index = 0;
+            index < incidentCount;
+            index++
         ) {
             incidents.push(
                 generateIncident(
@@ -2315,13 +2619,12 @@
                 5
             );
 
-        const quests =
-            [];
+        const quests = [];
 
         for (
-            let i = 0;
-            i < questCount;
-            i++
+            let index = 0;
+            index < questCount;
+            index++
         ) {
             quests.push(
                 generateQuest(
@@ -2385,122 +2688,88 @@
                 integer(
                     11,
                     99
-                ),
+                )
         };
 
         const timeline =
             generateTimeline(
-                experiences.reduce(
-                    (
-                        total,
-                        item
-                    ) =>
-                        total +
-                        Number(
-                            item.years
-                        ),
-                    0
+                integer(
+                    4,
+                    12
                 ),
                 industry,
                 experiences
             );
-
-        const createdYear =
-            Math.min(
-                ...timeline.map(
-                    item =>
-                        Number(
-                            item.year
-                        )
-                )
-            );
-
-        const updatedYear =
-            Math.max(
-                ...timeline.map(
-                    item =>
-                        Number(
-                            item.year
-                        )
-                )
-            );
-
-        const archive = {
-            archiveNumber:
-                `ARC-${integer(
-                    1000,
-                    9999
-                )}-${integer(
-                    10,
-                    99
-                )}`,
-
-            created:
-                `${createdYear}-${String(
-                    integer(1, 12)
-                ).padStart(
-                    2,
-                    "0"
-                )}-${String(
-                    integer(1, 28)
-                ).padStart(
-                    2,
-                    "0"
-                )}`,
-
-            lastUpdated:
-                `${Math.max(
-                    createdYear,
-                    updatedYear
-                )}-${String(
-                    integer(1, 12)
-                ).padStart(
-                    2,
-                    "0"
-                )}-${String(
-                    integer(1, 28)
-                ).padStart(
-                    2,
-                    "0"
-                )}`,
-
-            classification:
-                pick(
-                    [
-                        "PUBLIC",
-                        "INTERNAL",
-                        "RESTRICTED",
-                        "CLASSIFIED",
-                        "ANOMALOUS",
-                    ]
-                ),
-
-            warning:
-                pick(
-                    [
-                        "This portfolio may contain fictional infrastructure.",
-                        "Some systems described here technically do not exist.",
-                        "Archive integrity has been verified within the fictional universe.",
-                        "Several project outcomes remain disputed.",
-                        "Readers are advised not to deploy any artifact described here.",
-                    ]
-                ),
-        };
 
         const ui =
             generateUIDNA({
                 world,
                 title,
                 personality,
-                genre,
+                genre:
+                    world.genre,
                 chaos,
-                specialties,
+                specialties
             });
 
+        const createdYear =
+            integer(
+                2020,
+                2025
+            );
+
+        const updatedYear =
+            integer(
+                createdYear,
+                2026
+            );
+
+        const created =
+            randomDateLabel(
+                createdYear,
+                createdYear
+            );
+
+        const lastUpdated =
+            randomDateLabel(
+                updatedYear,
+                updatedYear
+            );
+
+        const archive = {
+            archiveNumber:
+                `ARC-${integer(
+                    10000,
+                    99999
+                )}`,
+
+            created,
+
+            lastUpdated,
+
+            classification:
+                pick([
+                    "PUBLIC",
+                    "FIELD RECORD",
+                    "PROFESSIONAL",
+                    "CLASSIFIED",
+                    "RESEARCH",
+                    "ARCHIVED"
+                ]),
+
+            warning:
+                pick([
+                    "This portfolio was generated from fictional operational records.",
+                    "This archive describes a professional history from a fictional reality.",
+                    "All projects, people and incidents in this archive are fictional.",
+                    "The following record may contain infrastructure that should not exist.",
+                    "Archive authenticity: intentionally impossible."
+                ])
+        };
+
         const portfolio = {
-            id: randomId(
-                "portfolio"
-            ),
+            id:
+                randomId("PORTFOLIO"),
 
             name,
 
@@ -2514,12 +2783,16 @@
 
             faction,
 
-            genre,
+            genre:
+                world.genre,
 
             specialties,
 
             years:
-                timeline.length,
+                integer(
+                    3,
+                    16
+                ),
 
             chaos,
 
@@ -2535,18 +2808,19 @@
 
             quests,
 
-            timeline,
-
             metrics,
+
+            timeline,
 
             archive,
 
             ui,
 
             generatedAt:
-                new Date().toISOString(),
+                Date.now(),
 
-            signature: "",
+            signature:
+                ""
         };
 
         portfolio.signature =
@@ -2561,7 +2835,7 @@
     function makeSignature(
         portfolio
     ) {
-        const content =
+        const data =
             [
                 portfolio.name,
                 portfolio.title,
@@ -2573,36 +2847,32 @@
                 portfolio.ui.nav,
                 portfolio.ui.hero,
                 ...portfolio.projects.map(
-                    item =>
-                        item.id
-                ),
-                ...portfolio.npcs.map(
-                    item =>
-                        item.id
+                    project =>
+                        project.id
                 ),
                 ...portfolio.experiences.map(
-                    item =>
-                        item.id
+                    experience =>
+                        experience.id
                 ),
-            ].join(
-                "|"
-            );
+                ...portfolio.npcs.map(
+                    npc =>
+                        npc.id
+                )
+            ].join("|");
 
         return hashString(
-            content
+            data
         );
     }
 
 
     function generateUniquePortfolio() {
-        let portfolio;
-
         for (
             let attempt = 0;
             attempt < 100;
             attempt++
         ) {
-            portfolio =
+            const portfolio =
                 generatePortfolio();
 
             if (
@@ -2618,7 +2888,9 @@
             }
         }
 
-        return portfolio;
+        throw new Error(
+            "Unable to generate a unique portfolio."
+        );
     }
 
 
@@ -2632,231 +2904,104 @@
         const root =
             document.documentElement;
 
+        const ui =
+            portfolio.ui;
+
         root.style.setProperty(
             "--accent",
-            portfolio.ui.accent
+            ui.accent
         );
 
         root.style.setProperty(
             "--accent-2",
-            portfolio.ui.accent2
+            ui.accent2
         );
 
         root.style.setProperty(
             "--bg",
-            portfolio.ui.background
+            ui.background
         );
 
         root.style.setProperty(
             "--surface",
-            portfolio.ui.surface
+            ui.surface
         );
 
         root.style.setProperty(
             "--radius",
-            `${portfolio.ui.radius}px`
+            `${ui.radius}px`
         );
 
-        const light =
-            [
-                "manhwa",
-                "newspaper",
-            ].includes(
-                portfolio.ui.family
-            );
-
+        /*
+         * Keep accent text readable for light palettes.
+         */
         root.style.setProperty(
             "--text-on-accent",
-            light
+            isLightColor(
+                ui.accent
+            )
                 ? "#111111"
                 : "#ffffff"
         );
+
+        root.dataset.uiFamily =
+            slug(
+                ui.family
+            );
     }
 
 
-    /* ========================================================
-       UI LANGUAGE
-       ======================================================== */
-
-    function uiLanguage(
-        portfolio
+    function isLightColor(
+        hex
     ) {
-        const family =
-            portfolio.ui.family;
+        const value =
+            String(hex)
+                .replace(
+                    "#",
+                    ""
+                );
 
-        const languages = {
-            executive: {
-                eyebrow:
-                    "EXECUTIVE PROFILE",
-                archive:
-                    "Portfolio Archive",
-                project:
-                    "Strategic Project",
-                experience:
-                    "Professional Record",
-            },
+        if (
+            value.length !== 6
+        ) {
+            return false;
+        }
 
-            terminal: {
-                eyebrow:
-                    "SYSTEM SESSION",
-                archive:
-                    "Process Archive",
-                project:
-                    "Service Instance",
-                experience:
-                    "Runtime History",
-            },
+        const r =
+            parseInt(
+                value.slice(
+                    0,
+                    2
+                ),
+                16
+            );
 
-            rpg: {
-                eyebrow:
-                    "CHARACTER RECORD",
-                archive:
-                    "Adventure Archive",
-                project:
-                    "Quest Artifact",
-                experience:
-                    "Guild History",
-            },
+        const g =
+            parseInt(
+                value.slice(
+                    2,
+                    4
+                ),
+                16
+            );
 
-            manhwa: {
-                eyebrow:
-                    "CHARACTER FILE",
-                archive:
-                    "Story Archive",
-                project:
-                    "Major Arc",
-                experience:
-                    "Career Arc",
-            },
+        const b =
+            parseInt(
+                value.slice(
+                    4,
+                    6
+                ),
+                16
+            );
 
-            dossier: {
-                eyebrow:
-                    "PERSONNEL DOSSIER",
-                archive:
-                    "Case Archive",
-                project:
-                    "Operational Case",
-                experience:
-                    "Assignment Record",
-            },
+        const luminance =
+            (
+                0.299 * r +
+                0.587 * g +
+                0.114 * b
+            );
 
-            research: {
-                eyebrow:
-                    "RESEARCH SUBJECT",
-                archive:
-                    "Research Archive",
-                project:
-                    "Experimental System",
-                experience:
-                    "Research Record",
-            },
-
-            luxury: {
-                eyebrow:
-                    "PRIVATE PROFILE",
-                archive:
-                    "Portfolio Collection",
-                project:
-                    "Selected Work",
-                experience:
-                    "Professional Collection",
-            },
-
-            brutalist: {
-                eyebrow:
-                    "SYSTEM / RECORD",
-                archive:
-                    "RAW ARCHIVE",
-                project:
-                    "BUILD",
-                experience:
-                    "FIELD RECORD",
-            },
-
-            space: {
-                eyebrow:
-                    "MISSION PROFILE",
-                archive:
-                    "Mission Archive",
-                project:
-                    "Mission System",
-                experience:
-                    "Mission Record",
-            },
-
-            detective: {
-                eyebrow:
-                    "INVESTIGATION FILE",
-                archive:
-                    "Case Archive",
-                project:
-                    "Evidence System",
-                experience:
-                    "Investigation Record",
-            },
-
-            spellbook: {
-                eyebrow:
-                    "ARCANE PROFILE",
-                archive:
-                    "Spell Archive",
-                project:
-                    "Artifact System",
-                experience:
-                    "Guild Record",
-            },
-
-            underground: {
-                eyebrow:
-                    "UNDERGROUND RECORD",
-                archive:
-                    "Hidden Archive",
-                project:
-                    "Underground Build",
-                experience:
-                    "Field Assignment",
-            },
-
-            newspaper: {
-                eyebrow:
-                    "SPECIAL REPORT",
-                archive:
-                    "Editorial Archive",
-                project:
-                    "Featured System",
-                experience:
-                    "Career Report",
-            },
-
-            "operating-system": {
-                eyebrow:
-                    "OPERATING PROFILE",
-                archive:
-                    "System Archive",
-                project:
-                    "Service",
-                experience:
-                    "Process History",
-            },
-
-            chaotic: {
-                eyebrow:
-                    "UNSTABLE PROFILE",
-                archive:
-                    "CHAOS ARCHIVE",
-                project:
-                    "QUESTIONABLE SYSTEM",
-                experience:
-                    "INCIDENT HISTORY",
-            },
-        };
-
-        return (
-            languages[
-                family
-            ] ||
-            languages.executive
-        );
+        return luminance > 175;
     }
 
 
@@ -2870,14 +3015,10 @@
     ) {
         return `
             <a
+                href="#${escapeHTML(target)}"
                 class="nav-link"
-                href="#${escapeHTML(
-                    target
-                )}"
             >
-                ${escapeHTML(
-                    label
-                )}
+                ${escapeHTML(label)}
             </a>
         `;
     }
@@ -2886,10 +3027,43 @@
     function renderNavigation(
         portfolio
     ) {
-        const labels =
-            uiLanguage(
-                portfolio
-            );
+        const ui =
+            portfolio.ui;
+
+        const links = [
+            navLink(
+                "profile",
+                "Profile"
+            ),
+            navLink(
+                "experiences",
+                "Experience"
+            ),
+            navLink(
+                "work",
+                "Projects"
+            ),
+            navLink(
+                "world",
+                "World"
+            ),
+            navLink(
+                "characters",
+                "NPCs"
+            ),
+            navLink(
+                "incidents",
+                "Incidents"
+            ),
+            navLink(
+                "quests",
+                "Quests"
+            ),
+            navLink(
+                "timeline",
+                "Timeline"
+            )
+        ].join("");
 
         return `
             <nav
@@ -2897,49 +3071,22 @@
                 aria-label="Portfolio navigation"
             >
 
-                ${navLink(
-                    "archive",
-                    labels.archive
-                )}
-
-                ${navLink(
-                    "experiences",
-                    labels.experience
-                )}
-
-                ${navLink(
-                    "work",
-                    labels.project
-                )}
-
-                ${navLink(
-                    "world",
-                    "World"
-                )}
-
-                ${navLink(
-                    "characters",
-                    "NPCs"
-                )}
-
-                ${navLink(
-                    "incidents",
-                    "Incidents"
-                )}
-
-                ${navLink(
-                    "quests",
-                    "Quests"
-                )}
+                <div class="nav-links">
+                    ${links}
+                </div>
 
                 <button
                     type="button"
                     class="generate-button"
                     data-generate
                 >
-                    ${portfolio.ui.nav === "rail"
-                        ? "NEW REALITY"
-                        : "GENERATE"}
+                    <span>
+                        ${ui.nav === "rail"
+                            ? "New Reality"
+                            : "Generate"}
+                    </span>
+
+                    <kbd>G</kbd>
                 </button>
 
             </nav>
@@ -2955,9 +3102,10 @@
 
                 <a
                     class="brand"
-                    href="#top"
+                    href="#main-content"
                     aria-label="Back to top"
                 >
+
                     <span class="brand-mark">
                         ${escapeHTML(
                             initials(
@@ -2966,11 +3114,9 @@
                         )}
                     </span>
 
-                    <span class="brand-copy">
+                    <span class="brand-text">
                         <strong>
-                            ${escapeHTML(
-                                portfolio.name
-                            )}
+                            ABSURD ARCHIVE
                         </strong>
 
                         <small>
@@ -2980,6 +3126,7 @@
                             )}
                         </small>
                     </span>
+
                 </a>
 
                 ${renderNavigation(
@@ -2998,129 +3145,142 @@
     function renderHero(
         portfolio
     ) {
-        const labels =
-            uiLanguage(
-                portfolio
-            );
+        const ui =
+            portfolio.ui;
 
         const modes = {
             identity: {
-                kicker:
-                    labels.eyebrow,
+                eyebrow:
+                    "IDENTITY FILE",
+
                 title:
                     portfolio.name,
+
                 subtitle:
-                    portfolio.title,
+                    portfolio.title
             },
 
             mission: {
-                kicker:
-                    "MISSION ACTIVE",
+                eyebrow:
+                    "ACTIVE MISSION",
+
                 title:
-                    portfolio.projects[0]
-                        ?.name ||
-                    portfolio.name,
+                    portfolio.world.name,
+
                 subtitle:
-                    portfolio.title,
+                    portfolio.title
             },
 
             profile: {
-                kicker:
-                    "PROFILE",
+                eyebrow:
+                    "PROFESSIONAL PROFILE",
+
                 title:
-                    portfolio.title,
-                subtitle:
                     portfolio.name,
+
+                subtitle:
+                    portfolio.industry
             },
 
             case: {
-                kicker:
+                eyebrow:
                     "CASE FILE",
+
                 title:
-                    portfolio.archive
-                        .archiveNumber,
+                    portfolio.archive.archiveNumber,
+
                 subtitle:
-                    portfolio.name,
+                    portfolio.name
             },
 
             status: {
-                kicker:
-                    "CURRENT STATUS",
+                eyebrow:
+                    "SYSTEM STATUS",
+
                 title:
-                    portfolio.archive
-                        .classification,
+                    portfolio.archive.classification,
+
                 subtitle:
-                    portfolio.name,
+                    portfolio.name
             },
 
             command: {
-                kicker:
+                eyebrow:
                     "COMMAND PROFILE",
+
                 title:
-                    portfolio.world.name,
+                    portfolio.faction,
+
                 subtitle:
-                    portfolio.title,
+                    portfolio.name
             },
 
             character: {
-                kicker:
-                    "CHARACTER",
+                eyebrow:
+                    "CHARACTER RECORD",
+
                 title:
                     portfolio.name,
+
                 subtitle:
-                    portfolio.personality,
+                    `${portfolio.personality} ${portfolio.title}`
             },
 
             manifesto: {
-                kicker:
-                    "MANIFESTO",
+                eyebrow:
+                    "ENGINEERING MANIFESTO",
+
                 title:
                     "Make failure visible.",
+
                 subtitle:
-                    portfolio.name,
+                    portfolio.name
             },
 
             classified: {
-                kicker:
-                    "CLASSIFIED",
+                eyebrow:
+                    "CLASSIFIED RECORD",
+
                 title:
-                    portfolio.archive
-                        .archiveNumber,
+                    "ACCESS GRANTED",
+
                 subtitle:
-                    "Access condition: fictional.",
+                    portfolio.name
             },
 
             "field-report": {
-                kicker:
+                eyebrow:
                     "FIELD REPORT",
+
                 title:
                     portfolio.world.name,
+
                 subtitle:
-                    portfolio.conflict ||
-                    portfolio.world
-                        .conflict,
-            },
+                    portfolio.name
+            }
         };
 
         const mode =
             modes[
-                portfolio.ui.hero
+                ui.hero
             ] ||
             modes.identity;
 
         return `
             <section
-                class="hero"
-                id="top"
+                class="hero section"
+                data-hero-mode="${escapeHTML(
+                    ui.hero
+                )}"
             >
 
                 <div class="hero-grid">
 
-                    <div class="hero-main">
+                    <div class="hero-copy">
 
                         <div class="eyebrow">
                             ${escapeHTML(
-                                mode.kicker
+                                mode.eyebrow
                             )}
                         </div>
 
@@ -3130,68 +3290,148 @@
                             )}
                         </h1>
 
-                        <p class="hero-title">
+                        <div class="hero-title">
                             ${escapeHTML(
                                 mode.subtitle
                             )}
-                        </p>
+                        </div>
 
                         <p class="hero-description">
                             ${escapeHTML(
-                                `${portfolio.name} is ${articleFor(
-                                    portfolio.title
-                                )} ${portfolio.title.toLowerCase()} operating from ${portfolio.world.name}, where ${portfolio.world.conflict.toLowerCase()}`
+                                pick([
+                                    `A ${portfolio.personality} ${portfolio.title.toLowerCase()} operating across ${portfolio.world.name}.`,
+                                    `A fictional professional archive assembled from projects, incidents, people and systems.`,
+                                    `${portfolio.world.description}`,
+                                    `Engineering, infrastructure and questionable decisions recorded as a compact operational portfolio.`
+                                ])
                             )}
                         </p>
 
                         <div class="hero-actions">
 
                             <a
-                                class="button"
                                 href="#work"
+                                class="button primary"
                             >
                                 View Projects
                             </a>
 
+                            <a
+                                href="#experiences"
+                                class="button secondary"
+                            >
+                                Experience
+                            </a>
+
                             <button
                                 type="button"
-                                class="button button-secondary"
+                                class="button ghost"
                                 data-generate
                             >
-                                Generate Another
+                                New Portfolio
                             </button>
+
+                        </div>
+
+                        <div class="hero-meta">
+
+                            ${heroMeta(
+                                "World",
+                                portfolio.world.name
+                            )}
+
+                            ${heroMeta(
+                                "Faction",
+                                portfolio.faction
+                            )}
+
+                            ${heroMeta(
+                                "Chaos",
+                                `${portfolio.chaos}/100`
+                            )}
+
+                            ${heroMeta(
+                                "Specialties",
+                                portfolio.specialties.length
+                            )}
 
                         </div>
 
                     </div>
 
-                    <aside class="hero-meta">
+                    <aside class="hero-panel card">
 
-                        ${infoCard(
-                            "World",
-                            portfolio.world.name
-                        )}
+                        <div class="section-kicker">
+                            CURRENT REALITY
+                        </div>
 
-                        ${infoCard(
-                            "Faction",
-                            portfolio.faction
-                        )}
+                        <div class="hero-panel-title">
+                            ${escapeHTML(
+                                portfolio.world.name
+                            )}
+                        </div>
 
-                        ${infoCard(
-                            "Industry",
-                            portfolio.industry
-                        )}
+                        <p>
+                            ${escapeHTML(
+                                portfolio.world.conflict
+                            )}
+                        </p>
 
-                        ${infoCard(
-                            "Chaos Index",
-                            `${portfolio.chaos}/100`
-                        )}
+                        <div class="hero-panel-grid">
+
+                            ${infoCard(
+                                "Stability",
+                                `${portfolio.world.stability}%`
+                            )}
+
+                            ${infoCard(
+                                "Population",
+                                formatNumber(
+                                    portfolio.world.population
+                                )
+                            )}
+
+                            ${infoCard(
+                                "Risk",
+                                portfolio.world.danger
+                            )}
+
+                            ${infoCard(
+                                "Archive",
+                                portfolio.archive.archiveNumber
+                            )}
+
+                        </div>
 
                     </aside>
 
                 </div>
 
             </section>
+        `;
+    }
+
+
+    function heroMeta(
+        label,
+        value
+    ) {
+        return `
+            <div class="hero-meta-box">
+
+                <span>
+                    ${escapeHTML(
+                        label
+                    )}
+                </span>
+
+                <strong>
+                    ${escapeHTML(
+                        String(value)
+                    )}
+                </strong>
+
+            </div>
         `;
     }
 
@@ -3204,24 +3444,21 @@
         portfolio
     ) {
         return `
-            <section
-                class="stats section"
-                aria-label="Portfolio statistics"
-            >
+            <section class="section stats-section">
 
                 <div class="stat-grid">
 
                     ${statCard(
                         "Systems",
-                        portfolio.metrics
-                            .systems
+                        formatNumber(
+                            portfolio.metrics.systems
+                        )
                     )}
 
                     ${statCard(
                         "Deployments",
                         formatNumber(
-                            portfolio.metrics
-                                .deployments
+                            portfolio.metrics.deployments
                         )
                     )}
 
@@ -3233,9 +3470,18 @@
                     ${statCard(
                         "Users / Records",
                         formatNumber(
-                            portfolio.metrics
-                                .users
+                            portfolio.metrics.users
                         )
+                    )}
+
+                    ${statCard(
+                        "Worlds Visited",
+                        portfolio.metrics.worldsVisited
+                    )}
+
+                    ${statCard(
+                        "Open Mysteries",
+                        portfolio.metrics.unresolvedMysteries
                     )}
 
                 </div>
@@ -3252,15 +3498,15 @@
         return `
             <article class="stat card">
 
-                <span class="meta-label">
+                <span class="stat-label">
                     ${escapeHTML(
                         label
                     )}
                 </span>
 
-                <strong>
+                <strong class="stat-value">
                     ${escapeHTML(
-                        value
+                        String(value)
                     )}
                 </strong>
 
@@ -3282,7 +3528,8 @@
             <div class="section-header">
 
                 <div>
-                    <div class="eyebrow">
+
+                    <div class="section-kicker">
                         ${escapeHTML(
                             eyebrow
                         )}
@@ -3293,6 +3540,7 @@
                             title
                         )}
                     </h2>
+
                 </div>
 
                 <p>
@@ -3308,13 +3556,10 @@
 
     function infoCard(
         label,
-        value,
-        extraClass = ""
+        value
     ) {
         return `
-            <article
-                class="card info-card ${extraClass}"
-            >
+            <article class="card info-card">
 
                 <span class="meta-label">
                     ${escapeHTML(
@@ -3343,7 +3588,9 @@
     ) {
         return `
             <article
-                class="card content-card ${extraClass}"
+                class="card content-card ${escapeHTML(
+                    extraClass
+                )}"
             >
 
                 <div class="section-kicker">
@@ -3371,17 +3618,21 @@
         className = ""
     ) {
         const list =
-            safeArray(
+            uniqueStrings(
                 values
             );
 
-        if (!list.length) {
+        if (
+            !list.length
+        ) {
             return "";
         }
 
         return `
             <div
-                class="tags ${className}"
+                class="tags ${escapeHTML(
+                    className
+                )}"
             >
 
                 ${list
@@ -3408,13 +3659,13 @@
     function renderProfile(
         portfolio
     ) {
-        const primarySpecialty =
+        const primary =
             portfolio.specialties[0] ||
             "Systems Engineering";
 
-        const secondarySpecialty =
+        const secondary =
             portfolio.specialties[1] ||
-            primarySpecialty;
+            primary;
 
         return `
             <section
@@ -3425,33 +3676,24 @@
                 ${sectionHeader(
                     "Subject Profile",
                     "The person behind the incidents.",
-                    `${portfolio.name} operates as a ${portfolio.title} with a focus on ${portfolio.specialties
-                        .slice(
-                            0,
-                            5
-                        )
-                        .join(
-                            ", "
-                        )}.`
+                    `${portfolio.name} operates as a ${portfolio.title} with a focus on ${portfolio.specialties.slice(0, 5).join(", ")}.`
                 )}
 
                 <div class="card-grid profile-card-grid">
 
                     ${textCard(
                         "Operating Profile",
-                        `${portfolio.name} is ${articleFor(
-                            portfolio.title
-                        )} ${portfolio.personality} ${portfolio.title.toLowerCase()} working primarily in ${portfolio.industry}.`
+                        `${portfolio.name} is a ${portfolio.personality} ${portfolio.title.toLowerCase()} working primarily in ${portfolio.industry}.`
                     )}
 
                     ${textCard(
                         "Background",
-                        `The formal record lists ${portfolio.education} as the primary educational background. The informal record contains references to ${portfolio.metrics.worldsVisited} worlds, ${portfolio.metrics.unresolvedMysteries} unresolved mysteries and an unreasonable number of systems that were supposedly temporary.`
+                        `The formal record lists ${portfolio.education}. The operational record contains references to ${portfolio.metrics.worldsVisited} worlds and ${portfolio.metrics.unresolvedMysteries} unresolved mysteries.`
                     )}
 
                     ${textCard(
                         "Engineering Philosophy",
-                        "Use appropriate technology, make failure visible, automate repetitive work, document important decisions, and never assume that a system is simple merely because the interface has only one button."
+                        "Use appropriate technology, make failure visible, automate repetitive work, document important decisions, and never assume a system is simple merely because the interface has one button."
                     )}
 
                 </div>
@@ -3460,12 +3702,12 @@
 
                     ${renderProfileFact(
                         "Primary Specialty",
-                        primarySpecialty
+                        primary
                     )}
 
                     ${renderProfileFact(
                         "Secondary Specialty",
-                        secondarySpecialty
+                        secondary
                     )}
 
                     ${renderProfileFact(
@@ -3485,8 +3727,7 @@
 
                     ${renderProfileFact(
                         "Professional Status",
-                        portfolio.archive
-                            .classification
+                        portfolio.archive.classification
                     )}
 
                 </div>
@@ -3524,7 +3765,8 @@
                 <h3 class="card-title">
                     ${escapeHTML(
                         safe(
-                            value
+                            value,
+                            "Unknown"
                         )
                     )}
                 </h3>
@@ -3541,11 +3783,6 @@
     function renderExperiences(
         portfolio
     ) {
-        const labels =
-            uiLanguage(
-                portfolio
-            );
-
         return `
             <section
                 class="section"
@@ -3553,9 +3790,9 @@
             >
 
                 ${sectionHeader(
-                    labels.experience,
+                    "Experience Archive",
                     "The jobs were normal. The circumstances were not.",
-                    "Card-based professional records connecting assignments, NPCs, technologies, incidents and outcomes."
+                    "Career records presented as compact operational case files. People, incidents and systems are connected."
                 )}
 
                 <div class="experience-stack">
@@ -3587,6 +3824,9 @@
         const narrative =
             experience.narrative ||
             {};
+
+        const npc =
+            experience.npc;
 
         return `
             <article
@@ -3630,7 +3870,9 @@
 
                         <span>
                             ${escapeHTML(
-                                experience.years
+                                String(
+                                    experience.years
+                                )
                             )}
                             years
                         </span>
@@ -3645,17 +3887,25 @@
 
                 </div>
 
-                <div class="experience-connection">
+                <div class="connection-strip">
 
-                    <span class="meta-label">
-                        NPC CONNECTION
+                    <span>
+                        PRIMARY NPC
                     </span>
 
                     <strong>
                         ${escapeHTML(
-                            experience.npc
+                            npc?.name ||
+                            "Unknown"
                         )}
                     </strong>
+
+                    <span>
+                        ${escapeHTML(
+                            npc?.role ||
+                            "Unknown role"
+                        )}
+                    </span>
 
                 </div>
 
@@ -3742,11 +3992,6 @@
     function renderProjects(
         portfolio
     ) {
-        const labels =
-            uiLanguage(
-                portfolio
-            );
-
         return `
             <section
                 class="section"
@@ -3754,9 +3999,9 @@
             >
 
                 ${sectionHeader(
-                    labels.project,
+                    "Project Archive",
                     "Projects with unnecessarily complicated histories.",
-                    "The main work archive: absurd systems, unusual clients, operational failures and technically defensible solutions."
+                    "Each project is a compact case file. Architecture, failure, clients and outcomes remain visible without turning the page into a wall of text."
                 )}
 
                 <div class="project-grid">
@@ -3788,6 +4033,9 @@
         const narrative =
             project.narrative ||
             {};
+
+        const client =
+            project.client;
 
         return `
             <article
@@ -3840,17 +4088,25 @@
 
                 </div>
 
-                <div class="project-connection">
+                <div class="connection-strip project-client">
 
-                    <span class="meta-label">
-                        CLIENT NPC
+                    <span>
+                        CLIENT / NPC
                     </span>
 
                     <strong>
                         ${escapeHTML(
-                            project.client
+                            client?.name ||
+                            "Unknown"
                         )}
                     </strong>
+
+                    <span>
+                        ${escapeHTML(
+                            client?.type ||
+                            "Unknown stakeholder"
+                        )}
+                    </span>
 
                 </div>
 
@@ -3875,7 +4131,8 @@
 
                     ${projectMetric(
                         "Client",
-                        project.client
+                        client?.name ||
+                        "Unknown"
                     )}
 
                 </div>
@@ -3970,7 +4227,8 @@
                 <strong>
                     ${escapeHTML(
                         safe(
-                            value
+                            value,
+                            "Unknown"
                         )
                     )}
                 </strong>
@@ -4068,13 +4326,11 @@
 
                         </div>
 
-                        ${tagList(
-                            [
-                                world.genre,
-                                world.danger,
-                                world.classification,
-                            ]
-                        )}
+                        ${tagList([
+                            world.genre,
+                            world.danger,
+                            world.classification
+                        ])}
 
                     </article>
 
@@ -4228,7 +4484,7 @@
                 ${sectionHeader(
                     "NPC Archive",
                     "People who definitely have their own stories.",
-                    "Every NPC is part of the fictional professional network: clients, employers, rivals, collaborators, witnesses and suspicious contacts."
+                    "These are active participants in the generated world. They become clients, employers, witnesses, contacts and quest-givers."
                 )}
 
                 <div class="npc-grid">
@@ -4241,8 +4497,7 @@
                             ) =>
                                 renderNPC(
                                     npc,
-                                    index,
-                                    portfolio
+                                    index
                                 )
                         )
                         .join("")}
@@ -4256,23 +4511,8 @@
 
     function renderNPC(
         npc,
-        index,
-        portfolio
+        index
     ) {
-        const projectCount =
-            portfolio.projects.filter(
-                project =>
-                    project.clientId ===
-                    npc.id
-            ).length;
-
-        const experienceCount =
-            portfolio.experiences.filter(
-                experience =>
-                    experience.npcId ===
-                    npc.id
-            ).length;
-
         return `
             <article
                 class="npc npc-card dossier-entry card"
@@ -4357,16 +4597,6 @@
                         )}
 
                         ${npcFact(
-                            "Projects",
-                            projectCount
-                        )}
-
-                        ${npcFact(
-                            "Experience Links",
-                            experienceCount
-                        )}
-
-                        ${npcFact(
                             "Encounters",
                             npc.encounters
                         )}
@@ -4427,13 +4657,11 @@
 
                     </article>
 
-                    ${tagList(
-                        [
-                            npc.trait,
-                            npc.type,
-                            npc.danger,
-                        ]
-                    )}
+                    ${tagList([
+                        npc.trait,
+                        npc.type,
+                        npc.danger
+                    ])}
 
                 </div>
 
@@ -4458,7 +4686,8 @@
                 <strong>
                     ${escapeHTML(
                         safe(
-                            value
+                            value,
+                            "Unknown"
                         )
                     )}
                 </strong>
@@ -4484,7 +4713,7 @@
                 ${sectionHeader(
                     "Incident Archive",
                     "Things that were not supposed to happen.",
-                    "Operational events connected to projects, NPC witnesses and the fictional world's infrastructure."
+                    "Every serious system eventually produces an event that becomes somebody else's story."
                 )}
 
                 <div class="incident-grid">
@@ -4583,13 +4812,6 @@
                         </span>
 
                         <span>
-                            Project:
-                            ${escapeHTML(
-                                incident.project
-                            )}
-                        </span>
-
-                        <span>
                             Status:
                             ${escapeHTML(
                                 incident.status
@@ -4655,7 +4877,7 @@
                 ${sectionHeader(
                     "Active Objectives",
                     "There is always another problem.",
-                    "Assignments currently circulating through the fictional operational network."
+                    "Assignments circulating through the fictional operational network."
                 )}
 
                 <div class="quest-grid">
@@ -4789,7 +5011,7 @@
                 ${sectionHeader(
                     "Chronology",
                     "How the situation developed.",
-                    "A compact historical record of increasingly questionable professional decisions."
+                    "A compact historical record of the portfolio owner's increasingly questionable career decisions."
                 )}
 
                 <div class="timeline">
@@ -4849,17 +5071,14 @@
 
 
     /* ========================================================
-       ARCHIVE
+       ARCHIVE NOTICE
        ======================================================== */
 
     function renderArchiveNotice(
         portfolio
     ) {
         return `
-            <section
-                class="section"
-                id="archive"
-            >
+            <section class="section">
 
                 <article class="archive-notice card">
 
@@ -4877,26 +5096,22 @@
 
                         ${infoCard(
                             "Archive",
-                            portfolio.archive
-                                .archiveNumber
+                            portfolio.archive.archiveNumber
                         )}
 
                         ${infoCard(
                             "Created",
-                            portfolio.archive
-                                .created
+                            portfolio.archive.created
                         )}
 
                         ${infoCard(
                             "Updated",
-                            portfolio.archive
-                                .lastUpdated
+                            portfolio.archive.lastUpdated
                         )}
 
                         ${infoCard(
                             "Classification",
-                            portfolio.archive
-                                .classification
+                            portfolio.archive.classification
                         )}
 
                     </div>
@@ -4950,8 +5165,7 @@
 
                     Archive:
                     ${escapeHTML(
-                        portfolio.archive
-                            .archiveNumber
+                        portfolio.archive.archiveNumber
                     )}
 
                     <br>
@@ -4980,15 +5194,6 @@
     function render(
         portfolio
     ) {
-        if (
-            !portfolio ||
-            !portfolio.ui
-        ) {
-            throw new Error(
-                "Invalid portfolio generated."
-            );
-        }
-
         runtime.current =
             portfolio;
 
@@ -5012,7 +5217,7 @@
 
         if (!app) {
             throw new Error(
-                "Application mount element #app was not found."
+                "Application root #app was not found."
             );
         }
 
@@ -5026,20 +5231,14 @@
             )}`,
             `density-${slug(
                 ui.density
-            )}`,
+            )}`
         ].join(" ");
 
         app.dataset.decoration =
-            safe(
-                ui.decoration,
-                "none"
-            );
+            ui.decoration;
 
         app.dataset.navigation =
-            safe(
-                ui.nav,
-                "top"
-            );
+            ui.nav;
 
         app.dataset.generation =
             String(
@@ -5051,7 +5250,9 @@
                 portfolio
             )}
 
-            <main id="main-content">
+            <main
+                id="main-content"
+            >
 
                 ${renderHero(
                     portfolio
@@ -5185,8 +5386,9 @@
                         element.scrollIntoView({
                             behavior:
                                 "smooth",
+
                             block:
-                                "start",
+                                "start"
                         });
                     }
                 );
@@ -5246,7 +5448,7 @@
                     whiteSpace:
                         "nowrap",
                     border:
-                        "0",
+                        "0"
                 }
             );
 
@@ -5265,7 +5467,7 @@
 
 
     /* ========================================================
-       GENERATION
+       GENERATE
        ======================================================== */
 
     function generateAndRender() {
@@ -5285,7 +5487,7 @@
 
 
     /* ========================================================
-       ERROR SCREEN
+       RUNTIME ERROR
        ======================================================== */
 
     function showRuntimeError(
@@ -5317,6 +5519,8 @@
                 display:grid;
                 place-items:center;
                 padding:32px;
+                background:var(--bg,#090a0c);
+                color:var(--text,#f5f7fa);
             ">
 
                 <article style="
@@ -5325,7 +5529,6 @@
                     border:1px solid rgba(255,255,255,.15);
                     border-radius:16px;
                     background:rgba(255,255,255,.04);
-                    color:var(--text,#f5f7fa);
                     font-family:system-ui,sans-serif;
                 ">
 
@@ -5339,9 +5542,7 @@
                         Runtime Error
                     </div>
 
-                    <h1 style="
-                        margin:0 0 12px;
-                    ">
+                    <h1>
                         Portfolio generation failed
                     </h1>
 
@@ -5405,15 +5606,11 @@
     window.addEventListener(
         "error",
         event => {
-            if (
-                event &&
-                event.error
-            ) {
-                console.error(
-                    "ABSURD CHAOS GLOBAL ERROR:",
-                    event.error
-                );
-            }
+            console.error(
+                "ABSURD CHAOS GLOBAL ERROR:",
+                event?.error ||
+                event?.message
+            );
         }
     );
 
@@ -5423,7 +5620,7 @@
         event => {
             console.error(
                 "ABSURD CHAOS UNHANDLED PROMISE:",
-                event.reason
+                event?.reason
             );
         }
     );
