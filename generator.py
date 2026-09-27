@@ -1,322 +1,567 @@
+from __future__ import annotations
 
-import random
 import json
-from datetime import datetime
+import random
+from pathlib import Path
 
-random.seed()
 
-first_names = [
-    "Bartholomew", "Kevin", "Princess", "Dr. Pickles",
-    "Boris", "Greg", "X Æ A-12", "Geraldine", "Lord",
-    "Chad", "Waffle", "Mildred", "Sir Reginald",
-    "Banana", "Quantum", "Toaster", "Dingus", "Susan",
-    "Professor", "Captain", "Meatball", "Zorp", "Goblin",
-    "Mysterious", "Lord", "Chairman", "Definitely"
-]
+ROOT = Path(__file__).resolve().parent
+TEMPLATE_FILE = ROOT / "templates" / "index.html"
+CSS_FILE = ROOT / "static" / "style.css"
+JS_FILE = ROOT / "static" / "app.js"
+OUTPUT_DIR = ROOT / "generated"
+OUTPUT_FILE = OUTPUT_DIR / "index.html"
 
-last_names = [
-    "McNoodle", "Von Wobble", "The Third", "Potato",
-    "Thunderpants", "McSpaghetti", "Quantum",
-    "Pancake", "Laserbeam", "Waffle", "Noodle",
-    "The Destroyer", "Bananabottom", "McFluff",
-    "Jellyfish", "Crumbington", "Moonboots",
-    "The Unemployed", "Toast", "Puddleworth",
-    "McExplosion", "Bigfoot", "of Nowhere"
-]
 
-jobs = [
-    "Chief Executive of Unnecessary Meetings",
-    "Professional Cloud Whisperer",
-    "Senior Intergalactic Parking Consultant",
-    "Certified Dinosaur Therapist",
-    "Chief Sandwich Architect",
-    "Director of Imaginary Infrastructure",
-    "Supreme Potato Strategist",
-    "Quantum Spreadsheet Necromancer",
-    "Professional Time-Traveling Accountant",
-    "Head of Advanced Spoon Technology",
-    "Underwater Influencer",
-    "Chief Happiness Dispenser",
-    "Freelance Reality Glitch Engineer",
-    "Senior Manager of Existential Confusion",
-    "Professional Ghost Influencer",
-    "Chief Vibe Optimization Officer",
-    "Director of Suspiciously Specific Ideas",
-    "International Nap Consultant",
-    "Lead Developer of Invisible Websites",
-    "Chief Banana Logistics Officer",
-    "Professional Alien Translator",
-    "Minister of Unfinished Projects",
-    "Advanced Croissant Engineer",
-    "Director of the Department of Nothing",
-    "Chief Meme Archaeologist",
-    "Certified Professional Goblin"
-]
+def choose_many(rng, values, minimum=2, maximum=5):
+    count = rng.randint(minimum, min(maximum, len(values)))
+    return rng.sample(values, count)
 
-locations = [
-    "The Moon, Floor 3",
-    "Atlantis, Basement",
-    "A suspicious potato farm",
-    "Somewhere behind a vending machine",
-    "The Republic of Lost Socks",
-    "New York, Mars",
-    "The Bermuda Triangle",
-    "A parallel universe with bad Wi-Fi",
-    "Inside a very large refrigerator",
-    "The International Space Station (uninvited)",
-    "The Internet, probably",
-    "The 47th dimension",
-    "A cardboard box in Luxembourg",
-    "Under the office coffee machine",
-    "The Forbidden Spreadsheet",
-    "A secret underground waffle bunker",
-    "The backrooms, level 404",
-    "The middle of nowhere, Ohio",
-    "A floating island of unpaid invoices"
-]
 
-companies = [
-    "Definitely Real Technologies",
-    "Nobody Asked LLC",
-    "The Ministry of Mild Confusion",
-    "Global Potato Corporation",
-    "Waffle Dynamics",
-    "Quantum Toast Industries",
-    "The Department of Questionable Ideas",
-    "Invisible Solutions Inc.",
-    "The Galactic Institute of Bad Decisions",
-    "Moonlight & Associates",
-    "The International Nap Foundation",
-    "Cloudless Cloud Corp.",
-    "Suspiciously Large Enterprises",
-    "The Society of Professional Nappers",
-    "The Bureau of Unfinished Business",
-    "Banana Incorporated",
-    "The Council of Extremely Weird People",
-    "404 Industries"
-]
+def build_config():
+    rng = random.SystemRandom()
 
-bio_openers = [
-    "I was born during a software update and have been buffering ever since.",
-    "My career began when a pigeon accidentally promoted me to CEO.",
-    "I have 47 years of experience despite being three weeks old.",
-    "My mother says I am special. My employer says I am a liability.",
-    "I once defeated an entire army of sentient staplers using only a spoon.",
-    "I specialize in solving problems that I personally invented.",
-    "I am the world's first professionally certified imaginary professional.",
-    "I have been banned from 14 office supply stores for reasons I cannot disclose.",
-    "I am a visionary who has never actually seen the vision.",
-    "I turned my childhood imaginary friend into a multinational corporation.",
-    "My greatest professional achievement was surviving a team-building exercise.",
-    "I have successfully failed at 93 different careers."
-]
+    config = {
+        "version": "1.0.0",
 
-bio_middles = [
-    "My work combines advanced mathematics, aggressive interpretive dance, and the ancient art of guessing.",
-    "My daily routine involves negotiating with printers, fighting invisible deadlines, and explaining myself to confused managers.",
-    "I have revolutionized absolutely nothing, but I have done it with confidence.",
-    "My patented approach to innovation is to press random buttons until something catches fire.",
-    "I bring a unique combination of unearned confidence and extremely questionable technical skills.",
-    "I believe every problem can be solved with artificial intelligence, three spreadsheets, and a very large sandwich.",
-    "My leadership style has been described as 'a surprise attack by a confused raccoon.'",
-    "I once delivered a keynote speech to a room full of chairs. The chairs were unimpressed.",
-    "My portfolio contains 600 projects, 599 of which are still loading.",
-    "I am currently disrupting the global market for imaginary products."
-]
+        "names": [
+            "Ari Voss",
+            "Kael Ren",
+            "Mira Vale",
+            "Noah Kestrel",
+            "Rin Aster",
+            "Sora Nyx",
+            "Elian Crowe",
+            "Nara Vey",
+            "Iris Quill",
+            "Theo Rune",
+            "Vera Sol",
+            "Kian Frost",
+            "Asha Mori",
+            "Ren Calder",
+            "Lena Voss",
+            "Orin Vale",
+            "Yuna Kade",
+            "Milo Ash",
+            "Eren Locke",
+            "Niko Wren",
+            "Aya Rook",
+            "Cass Rowan",
+            "Juno Rei",
+            "Dante Kiro",
+            "Lyra Chen",
+            "Rhea Knox",
+            "Kai Mercer",
+            "Nova Hart",
+            "Mina Cross",
+            "Arden Pike",
+        ],
 
-bio_endings = [
-    "Please do not contact my previous employers. They have moved to another dimension.",
-    "Available for freelance work, interdimensional travel, and extremely suspicious business deals.",
-    "My references include three ghosts, a sentient microwave, and a very judgmental pigeon.",
-    "I accept payment in gold bars, expired coupons, and emotional support potatoes.",
-    "I am not responsible for any timelines accidentally deleted during my employment.",
-    "My hobbies include staring at walls, collecting imaginary awards, and avoiding accountability.",
-    "I am currently wanted in 12 countries and one particularly angry spreadsheet.",
-    "Please note: all achievements are technically true in a universe that no longer exists."
-]
+        "titles": [
+            "Senior Backend Engineer",
+            "Staff Software Engineer",
+            "Full-Stack Engineer",
+            "Platform Engineer",
+            "Systems Architect",
+            "Product Engineer",
+            "DevOps Engineer",
+            "Cloud Infrastructure Engineer",
+            "Security Engineer",
+            "Data Platform Engineer",
+            "AI Infrastructure Engineer",
+            "Frontend Systems Engineer",
+            "Developer Experience Engineer",
+            "Technical Product Designer",
+            "Creative Technologist",
+            "Research Engineer",
+            "Software Consultant",
+            "Distributed Systems Engineer",
+            "Automation Engineer",
+            "Independent Software Engineer",
+        ],
 
-skills = [
-    "Advanced Napping", "JavaScript", "Quantum Typing",
-    "Professional Guessing", "Unlicensed Telepathy",
-    "Strategic Confusion", "Python", "React",
-    "Emotional Support Excel", "Cloud Appreciation",
-    "Vague Leadership", "Digital Archaeology",
-    "Interdimensional Networking", "CSS Sorcery",
-    "Meeting Survival", "Unnecessary Innovation",
-    "Professional Goblin Behavior", "Dream Engineering",
-    "Coffee Optimization", "Advanced Spoon Handling",
-    "Existential Debugging", "Unpaid Intern Management",
-    "Invisible Infrastructure", "PowerPoint Archaeology",
-    "Crisis Avoidance", "Aggressive Procrastination",
-    "Telepathic Sandwich Design", "Meme Engineering",
-    "Time Management (Badly)", "Fake It Till You Make It",
-    "Excel Wizardry", "Forbidden Spreadsheet Magic",
-    "Underwater Basket Weaving", "Advanced Potato Theory",
-    "Reality Glitch Detection", "Intergalactic HR"
-]
+        "specialties": [
+            "Python",
+            "JavaScript",
+            "TypeScript",
+            "PostgreSQL",
+            "Docker",
+            "Linux",
+            "Redis",
+            "REST APIs",
+            "GraphQL",
+            "Cloud Infrastructure",
+            "Distributed Systems",
+            "CI/CD",
+            "Observability",
+            "Automation",
+            "Data Pipelines",
+            "Event-Driven Systems",
+            "Web Performance",
+            "Security Engineering",
+            "Developer Tooling",
+            "System Design",
+        ],
 
-project_names = [
-    "Project Banana", "The Invisible App", "Operation NapTime",
-    "Quantum Sandwich", "The Potato Protocol",
-    "Cloudless Cloud", "Dreamscapes 404", "Vibe Calculator",
-    "The Great Spoon Initiative", "The Time-Traveling Toaster",
-    "Intergalactic Parking", "Unnecessary AI",
-    "The Forbidden Spreadsheet", "GoblinGPT",
-    "The Emotional Support Printer", "The Infinite Loading Screen",
-    "The Sentient Waffle", "The Department of Nothing",
-    "The Chaos Engine", "The Unpaid Invoice Generator",
-    "The Moon Cheese Project", "The Multiverse of Mild Inconvenience"
-]
+        "industries": [
+            "healthcare technology",
+            "financial platforms",
+            "logistics",
+            "developer tooling",
+            "e-commerce",
+            "education technology",
+            "media platforms",
+            "cloud infrastructure",
+            "enterprise automation",
+            "research software",
+            "cybersecurity",
+            "public-sector technology",
+            "digital commerce",
+            "workflow automation",
+            "SaaS platforms",
+        ],
 
-project_descriptions = [
-    "A revolutionary application that does absolutely nothing, beautifully.",
-    "An AI-powered system that generates increasingly suspicious ideas.",
-    "A decentralized platform for the secure exchange of imaginary potatoes.",
-    "An experimental framework for negotiating with extraterrestrial accountants.",
-    "A productivity tool that makes sleeping look like a legitimate career.",
-    "A highly classified project that accidentally became a public website.",
-    "An interactive experience that turns random thoughts into questionable products.",
-    "A virtual companion that judges your life choices in real time.",
-    "A cloud platform that is not actually in the cloud.",
-    "An advanced system for scheduling meetings that should never happen.",
-    "A futuristic infrastructure project built entirely out of cardboard.",
-    "An award-winning prototype that was never finished or started.",
-    "A mysterious digital organism that eats expired spreadsheets.",
-    "An ambitious experiment in the field of unnecessary complexity."
-]
+        "personalities": [
+            "methodical",
+            "curious",
+            "quietly chaotic",
+            "systems-minded",
+            "experimental",
+            "obsessively organized",
+            "dryly humorous",
+            "highly pragmatic",
+            "inventive",
+            "calm under pressure",
+            "detail-oriented",
+            "restlessly curious",
+            "strategic",
+            "minimalist",
+            "unreasonably persistent",
+        ],
 
-achievements = [
-    "Won the International Championship of Professional Napping.",
-    "Successfully negotiated peace between two rival houseplants.",
-    "Invented a color that only exists on Tuesdays.",
-    "Received a lifetime achievement award from three pigeons.",
-    "Built a viral side project with 2 million imaginary views.",
-    "Was briefly mistaken for a government official at a sandwich shop.",
-    "Published 47 research papers on the cultural significance of office snacks.",
-    "Made a printer work by politely asking it.",
-    "Successfully completed a 30-day challenge of avoiding all responsibilities.",
-    "Became the first human to be fired from an imaginary job.",
-    "Received a Nobel Prize in Extremely Questionable Science.",
-    "Created a self-aware PowerPoint presentation that immediately resigned.",
-    "Survived a hostile takeover by sentient office chairs.",
-    "Was voted Most Likely to Accidentally Delete the Internet.",
-    "Won a gold medal in competitive staring at walls.",
-    "Was named Person of the Year by a magazine that does not exist.",
-    "Invented a new form of currency based on expired coupons.",
-    "Reached level 99 in professional procrastination."
-]
+        "worlds": [
+            {
+                "name": "The Neon Archive",
+                "genre": "cyberpunk",
+                "description": "A megacity where abandoned APIs become folklore and forgotten databases are treated as sacred ruins.",
+                "sky": "violet static",
+            },
+            {
+                "name": "Eidolon Prime",
+                "genre": "space opera",
+                "description": "A fractured interstellar civilization held together by engineers, diplomats, and one extremely unreliable moon.",
+                "sky": "artificial auroras",
+            },
+            {
+                "name": "The Seven-Layer Kingdom",
+                "genre": "fantasy",
+                "description": "A kingdom built vertically, where every architectural layer has its own economy, politics, and suspiciously competent guild.",
+                "sky": "floating citadels",
+            },
+            {
+                "name": "Moonfall District",
+                "genre": "urban fantasy",
+                "description": "A city district permanently illuminated by fragments of a moon that technically should not exist anymore.",
+                "sky": "silver fragments",
+            },
+            {
+                "name": "The Black Meridian",
+                "genre": "dark fantasy",
+                "description": "A continent where information is currency and every secret has a measurable weight.",
+                "sky": "red eclipses",
+            },
+            {
+                "name": "Aster-09",
+                "genre": "science fiction",
+                "description": "A remote research colony where every department has independently invented its own calendar.",
+                "sky": "two artificial suns",
+            },
+            {
+                "name": "Velorum City",
+                "genre": "manhwa-inspired modern fantasy",
+                "description": "A modern metropolis where awakened individuals quietly work ordinary jobs while managing increasingly unreasonable supernatural incidents.",
+                "sky": "blue electric storms",
+            },
+            {
+                "name": "The Glass Continent",
+                "genre": "high fantasy",
+                "description": "A crystalline civilization connected by ancient transit gates that nobody remembers how to repair.",
+                "sky": "fractured constellations",
+            },
+            {
+                "name": "Sector Null",
+                "genre": "post-apocalyptic sci-fi",
+                "description": "A surviving industrial zone where machines outnumber humans and the machines have started forming professional associations.",
+                "sky": "orange dust",
+            },
+            {
+                "name": "The Infinite Metro",
+                "genre": "surreal fantasy",
+                "description": "A transit network with no final station, populated by commuters who occasionally arrive in completely different realities.",
+                "sky": "indoor stars",
+            },
+            {
+                "name": "Ashen Republic",
+                "genre": "political fantasy",
+                "description": "A republic where ministries, mercenary guilds, and archivists compete to control the country's surviving knowledge.",
+                "sky": "permanent twilight",
+            },
+            {
+                "name": "Kurovale",
+                "genre": "dark urban fantasy",
+                "description": "A rain-soaked city of hunters, developers, occult investigators, and businesses that definitely should not exist.",
+                "sky": "black rain",
+            },
+        ],
 
-degrees = [
-    "PhD in Applied Nonsense",
-    "MSc in Advanced Daydreaming",
-    "Doctorate in Unnecessary Complexity",
-    "Bachelor of Intergalactic Business",
-    "Diploma in Professional Confusion",
-    "Honorary Degree in Vibes",
-    "Certificate in Theoretical Sandwiches",
-    "Master of Suspicious Technology",
-    "PhD in Existential Spreadsheet Studies",
-    "BSc in Unlicensed Innovation"
-]
+        "factions": [
+            "Department of Unnecessary Architecture",
+            "Azure Systems Guild",
+            "Order of the Silent Compiler",
+            "Moonlit Infrastructure Bureau",
+            "Seven-Key Consortium",
+            "Red Meridian Research Circle",
+            "Night Shift Engineering Union",
+            "The Glass Operators",
+            "Null Sector Maintainers",
+            "Axiom Security Directorate",
+            "Independent Reality Debuggers",
+            "Archive of Forbidden Deployments",
+            "Guild of Extremely Specific Problems",
+            "The Last Documentation Society",
+            "Ministry of Temporary Solutions",
+            "Velvet Circuit Syndicate",
+            "Royal Bureau of Broken Things",
+            "The Recursive Council",
+        ],
 
-universities = [
-    "The University of Questionable Excellence",
-    "International Academy of Unnecessary Knowledge",
-    "The Galactic Institute of Advanced Confusion",
-    "University of Lost Socks",
-    "The Institute of Professional Daydreaming",
-    "The University of Things That Probably Don't Exist",
-    "The Royal Academy of Imaginary Sciences",
-    "The College of Suspiciously Specific Ideas"
-]
+        "genres": [
+            "cyberpunk",
+            "fantasy",
+            "dark fantasy",
+            "space opera",
+            "urban fantasy",
+            "science fiction",
+            "mystery",
+            "post-apocalyptic",
+            "manhwa-inspired fantasy",
+            "surreal adventure",
+            "steampunk",
+            "occult detective",
+        ],
 
-def unique_items(items, amount):
-    return random.sample(items, min(amount, len(items)))
+        "ui_families": [
+            "executive",
+            "terminal",
+            "rpg",
+            "manhwa",
+            "dossier",
+            "research",
+            "luxury",
+            "brutalist",
+            "space",
+            "detective",
+            "spellbook",
+            "underground",
+            "newspaper",
+            "operating-system",
+            "chaotic",
+        ],
 
-def generate_profile():
-    first = random.choice(first_names)
-    last = random.choice(last_names)
-    name = f"{first} {last}"
+        "layouts": [
+            "asymmetric",
+            "editorial",
+            "command",
+            "character-sheet",
+            "case-file",
+            "dashboard",
+            "split-screen",
+            "stacked",
+            "magazine",
+            "terminal-grid",
+            "mission-control",
+            "dense-grid",
+        ],
 
-    current_year = datetime.now().year
-    years = random.randint(1, 42)
+        "navs": [
+            "top",
+            "rail",
+            "floating",
+            "command",
+            "minimal",
+            "drawer",
+        ],
 
-    profile = {
-        "name": name,
-        "job": random.choice(jobs),
-        "category": random.choice([
-            "CERTIFIED NONSENSE EXPERT",
-            "INTERGALACTIC INNOVATOR",
-            "CHIEF OF QUESTIONABLE IDEAS",
-            "SENIOR REALITY ENGINEER",
-            "PROFESSIONAL CHAOS ENTHUSIAST",
-            "UNLICENSED FUTURE DISRUPTOR",
-            "OFFICIALLY UNVERIFIED HUMAN",
-            "SUPREME MASTER OF ABSOLUTELY NOTHING"
-        ]),
-        "location": random.choice(locations),
-        "years": years,
-        "bio": (
-            random.choice(bio_openers) + " "
-            + random.choice(bio_middles) + " "
-            + random.choice(bio_endings)
-        ),
-        "about": (
-            random.choice(bio_middles) + " "
-            + random.choice(bio_openers) + " "
-            + random.choice(bio_endings)
-        ),
-        "id": f"CHAOS-{random.randint(100000, 999999)}",
-        "experience": [],
-        "projects": [],
-        "skills": unique_items(skills, random.randint(8, 14)),
-        "achievements": unique_items(achievements, 4),
-        "degree": random.choice(degrees),
-        "university": random.choice(universities),
-        "education_year": current_year - random.randint(3, 30),
-        "project_count": random.randint(3, 999),
-        "countries": random.randint(1, 195),
-        "coffee": random.choice([
-            "∞", "999+", "4,208", "12,000", "Too many",
-            "A suspicious amount", "Classified"
-        ]),
-        "avatar_color": random.choice([
-            "#ff4e8b", "#a875ff", "#00d5ff", "#f8a23b",
-            "#64df8e", "#ed67d0", "#ff5252", "#7c83ff"
-        ]),
-        "salary": random.randint(1, 999) * 100000
+        "hero_modes": [
+            "identity",
+            "mission",
+            "profile",
+            "case",
+            "status",
+            "command",
+            "character",
+            "manifesto",
+        ],
+
+        "project_types": [
+            "platform",
+            "automation system",
+            "developer tool",
+            "healthcare workflow",
+            "analytics system",
+            "API platform",
+            "infrastructure project",
+            "security platform",
+            "data pipeline",
+            "internal operations system",
+            "SaaS product",
+            "research prototype",
+            "distributed service",
+            "workflow engine",
+            "monitoring platform",
+        ],
+
+        "project_names": [
+            "Atlas",
+            "Nightwatch",
+            "Helix",
+            "Axiom",
+            "Orchid",
+            "Sentinel",
+            "Mosaic",
+            "Northstar",
+            "Pulse",
+            "Meridian",
+            "Vector",
+            "Lattice",
+            "Orbit",
+            "Foundry",
+            "Beacon",
+            "Relay",
+            "Forge",
+            "Prism",
+            "Echo",
+            "Vanta",
+        ],
+
+        "npc_first": [
+            "Aki",
+            "Rin",
+            "Kaori",
+            "Ren",
+            "Mika",
+            "Yoru",
+            "Sena",
+            "Haru",
+            "Kira",
+            "Nami",
+            "Rei",
+            "Toma",
+            "Aya",
+            "Kuro",
+            "Mio",
+            "Sora",
+            "Yuna",
+            "Rika",
+            "Nero",
+            "Eli",
+        ],
+
+        "npc_last": [
+            "Kuro",
+            "Vale",
+            "Aster",
+            "Mori",
+            "Vey",
+            "Rook",
+            "Kade",
+            "Nyx",
+            "Rune",
+            "Ash",
+            "Locke",
+            "Crow",
+            "Ren",
+            "Sol",
+            "Pike",
+            "Wren",
+            "Cross",
+            "Voss",
+        ],
+
+        "npc_roles": [
+            "royal archivist",
+            "rogue engineer",
+            "guild strategist",
+            "wandering healer",
+            "reality cartographer",
+            "black-market compiler",
+            "moon priest",
+            "systems investigator",
+            "contract hunter",
+            "forbidden librarian",
+            "airship navigator",
+            "security captain",
+            "dimension merchant",
+            "exiled prince",
+            "night-shift mechanic",
+            "oracle",
+            "data alchemist",
+            "underground journalist",
+            "monster negotiator",
+            "government auditor",
+        ],
+
+        "npc_types": [
+            "human",
+            "awakened human",
+            "synthetic human",
+            "moon-born",
+            "void-touched",
+            "forest spirit",
+            "dragon-blooded",
+            "android",
+            "star wanderer",
+            "archive entity",
+            "masked hunter",
+            "dimension traveler",
+        ],
+
+        "npc_traits": [
+            "suspiciously polite",
+            "fearlessly curious",
+            "emotionally unreadable",
+            "dramatic",
+            "extremely practical",
+            "secretly sentimental",
+            "dangerously competent",
+            "chaotically helpful",
+            "quietly ambitious",
+            "obsessed with tea",
+            "unreasonably loyal",
+            "professionally intimidating",
+        ],
+
+        "quests": [
+            "repair the infrastructure before the next artificial eclipse",
+            "find out who deployed directly to production",
+            "convince the royal council that version control is necessary",
+            "retrieve a missing database from the lower city",
+            "investigate an API that answers questions nobody asked",
+            "escort an unstable artifact across seven districts",
+            "document the forbidden deployment procedure",
+            "stop the maintenance robot from becoming mayor",
+            "recover the lost architecture diagram",
+            "determine why the moon has a status page",
+            "find the engineer who keeps renaming production servers",
+            "debug the ancient transit gate",
+            "prevent the guild from replacing PostgreSQL with magic",
+            "locate the missing incident report",
+            "survive the quarterly dungeon audit",
+        ],
+
+        "secrets": [
+            "knows why the previous civilization disappeared",
+            "owns a key to an impossible server room",
+            "has seen the original source code of reality",
+            "is secretly employed by a rival faction",
+            "can remember deleted timelines",
+            "maintains a private map of forbidden infrastructure",
+            "knows the true identity of the city's administrator",
+            "once defeated a production outage with a handwritten note",
+            "has access to a database that predates civilization",
+            "is afraid of automated deployment systems",
+        ],
+
+        "statuses": [
+            "ONLINE",
+            "STANDBY",
+            "UNDER INVESTIGATION",
+            "ACTIVE",
+            "DEEP COVER",
+            "MISSING",
+            "DEPLOYED",
+            "OBSERVING",
+            "UNKNOWN",
+            "HIGH PRIORITY",
+        ],
+
+        "education": [
+            "B.Tech. Computer Science",
+            "B.Sc. Computer Science",
+            "M.Sc. Software Systems",
+            "M.Tech. Distributed Systems",
+            "Computer Engineering",
+            "Self-taught engineering background",
+            "Applied Computing",
+            "Software Systems Research",
+        ],
+
+        "locations": [
+            "Hansi",
+            "Velorum City",
+            "The Neon Archive",
+            "Sector Null",
+            "Aster-09",
+            "Moonfall District",
+            "The Glass Continent",
+            "Kurovale",
+            "The Infinite Metro",
+            "Ashen Republic",
+        ],
     }
 
-    job_titles = unique_items(jobs, 3)
-    employers = unique_items(companies, 3)
-    for i in range(3):
-        start = current_year - random.randint(2, 22) - i * random.randint(1, 5)
-        profile["experience"].append({
-            "title": job_titles[i],
-            "company": employers[i],
-            "period": (
-                f"{start} – Present" if i == 0
-                else f"{start} – {start + random.randint(1, 3)}"
-            ),
-            "description": random.choice([
-                "Managed a team of highly confused professionals and several uncooperative office plants.",
-                "Developed a revolutionary strategy that accidentally created a new dimension.",
-                "Built innovative solutions for problems that were never officially reported.",
-                "Directed a multi-million-dollar project funded entirely by imaginary money.",
-                "Improved company efficiency by introducing a mandatory daily nap.",
-                "Worked closely with an interdisciplinary team of ghosts, robots, and accountants."
-            ])
-        })
+    # Generate additional combinations at build time.
+    config["generated_project_seeds"] = [
+        {
+            "name": rng.choice(config["project_names"]),
+            "type": rng.choice(config["project_types"]),
+            "industry": rng.choice(config["industries"]),
+        }
+        for _ in range(32)
+    ]
 
-    project_titles = unique_items(project_names, 3)
-    descriptions = unique_items(project_descriptions, 3)
-    for i in range(3):
-        profile["projects"].append({
-            "title": project_titles[i],
-            "description": descriptions[i],
-            "status": random.choice(["LIVE", "BETA", "QUESTIONABLE", "HAUNTED"])
-        })
+    config["generated_npc_seeds"] = [
+        {
+            "first": rng.choice(config["npc_first"]),
+            "last": rng.choice(config["npc_last"]),
+            "role": rng.choice(config["npc_roles"]),
+            "type": rng.choice(config["npc_types"]),
+        }
+        for _ in range(32)
+    ]
 
-    return profile
+    config["build_identity"] = f"{rng.getrandbits(64):016x}"
 
-json.dumps(generate_profile(), ensure_ascii=False)
+    return config
+
+
+def main():
+    config = build_config()
+
+    template = TEMPLATE_FILE.read_text(encoding="utf-8")
+    css = CSS_FILE.read_text(encoding="utf-8")
+    js = JS_FILE.read_text(encoding="utf-8")
+
+    config_json = json.dumps(
+        config,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+
+    html = (
+        template
+        .replace("{{GENERATED_CONFIG}}", config_json)
+        .replace("{{GENERATED_CSS}}", css)
+        .replace("{{GENERATED_JS}}", js)
+    )
+
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    OUTPUT_FILE.write_text(html, encoding="utf-8")
+
+    print(f"Generated: {OUTPUT_FILE}")
+    print(f"Build identity: {config['build_identity']}")
+    print("Static output is ready.")
+
+
+if __name__ == "__main__":
+    main()
