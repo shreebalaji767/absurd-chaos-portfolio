@@ -1,0 +1,212 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>CHAOSFOLIO — Absurd Portfolios for Absurd People</title>
+  <meta name="description" content="Meet a new absurd fictional professional every refresh. Chaotic careers, impossible achievements, ridiculous skills and completely unnecessary portfolios.">
+  <meta name="keywords" content="blssnvj21, absurd portfolio, chaosfolio, random portfolio generator, fictional resume, chaotic portfolio, comedy website">
+  <meta name="author" content="CHAOSFOLIO">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#0a0712">
+  <meta name="application-name" content="CHAOSFOLIO">
+  <meta name="generator" content="Python, Pyodide and JavaScript">
+
+  <!-- Replace with your deployed URL -->
+  <link rel="canonical" href="https://YOUR-DOMAIN.example/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="CHAOSFOLIO">
+  <meta property="og:title" content="CHAOSFOLIO — Absurd Portfolios">
+  <meta property="og:description" content="A completely new chaotic, fictional portfolio every refresh.">
+  <meta property="og:url" content="https://YOUR-DOMAIN.example/">
+  <meta property="og:locale" content="en_US">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="CHAOSFOLIO">
+  <meta name="twitter:description" content="Absurd careers. Chaotic biographies. New fictional profiles every refresh.">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "CHAOSFOLIO",
+    "description": "A browser-based generator of absurd fictional portfolios.",
+    "url": "https://YOUR-DOMAIN.example/",
+    "keywords": "blssnvj21, absurd portfolio, fictional resume, chaos generator"
+  }
+  </script>
+
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js"></script>
+  <script src="app.js" defer></script>
+</head>
+
+<body>
+  <header class="topbar">
+    <a href="#top" class="brand" aria-label="CHAOSFOLIO home">
+      <span class="brand-symbol">✳</span> CHAOS<span>FOLIO</span>
+    </a>
+
+    <div class="topbar-right">
+      <span class="live"><span></span> CHAOS ENGINE</span>
+      <button id="generate" class="refresh-button" type="button">
+        <span aria-hidden="true">⟳</span> NEW CHAOS
+      </button>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="intro">
+      <div class="intro-kicker">THE INTERNET'S LEAST NECESSARY PORTFOLIO GENERATOR</div>
+      <h1>Meet your next<br><span>questionable employee.</span></h1>
+      <p>Every refresh summons a completely new professional disaster.</p>
+      <div class="intro-tagline">
+        <span>100% FICTIONAL</span>
+        <span>0% ACCOUNTABILITY</span>
+        <span>∞% CHAOS</span>
+      </div>
+    </section>
+
+    <div id="loading" class="loading" role="status" aria-live="polite">
+      <span class="loader"></span>
+      <p>Summoning an unqualified professional...</p>
+      <small>Loading Python chaos engine</small>
+    </div>
+
+    <div id="error" class="error" role="alert" hidden>
+      <h2>The chaos engine has malfunctioned.</h2>
+      <p id="error-message">Could not generate a profile.</p>
+      <button class="refresh-button" type="button" onclick="location.reload()">
+        TRY AGAIN
+      </button>
+    </div>
+
+    <div id="portfolio" hidden>
+      <section class="profile-header">
+        <div class="profile-label">
+          <span class="status-dot"></span>
+          <span id="category">CERTIFIED NONSENSE</span>
+          <span class="profile-id" id="profile-id"></span>
+        </div>
+
+        <div class="identity">
+          <div class="identity-copy">
+            <div class="tiny-label">PRESENTING THE UNFORTUNATE</div>
+            <h2 id="name">Loading...</h2>
+            <h3 id="job">Loading job title...</h3>
+            <div class="location" id="location"></div>
+          </div>
+
+          <div class="identity-stamp" aria-hidden="true">
+            <span>100%</span>
+            <strong>REAL*</strong>
+            <small>*ABSOLUTELY NOT</small>
+          </div>
+        </div>
+
+        <p class="bio" id="bio"></p>
+
+        <div class="hero-stats">
+          <div><strong id="years">0</strong><span>YEARS OF NONSENSE</span></div>
+          <div><strong id="project-count">0</strong><span>QUESTIONABLE PROJECTS</span></div>
+          <div><strong id="countries">0</strong><span>COUNTRIES CONFUSED</span></div>
+          <div><strong id="coffee">∞</strong><span>COFFEE CONSUMED</span></div>
+        </div>
+      </section>
+
+      <div class="content-layout">
+        <div class="main-content">
+          <section class="section-card">
+            <div class="section-heading">
+              <span class="section-number">01</span>
+              <h2>THE LEGEND</h2>
+              <span class="section-caption">A BIOGRAPHY OF QUESTIONABLE ACCURACY</span>
+            </div>
+            <p id="about" class="about"></p>
+            <div class="warning">
+              <span>⚠</span>
+              <p>This professional has not been verified by any known government, employer, or functioning adult.</p>
+            </div>
+          </section>
+
+          <section class="section-card">
+            <div class="section-heading">
+              <span class="section-number">02</span>
+              <h2>EMPLOYMENT CRIMES</h2>
+              <span class="section-caption">WORK HISTORY</span>
+            </div>
+            <div id="experience" class="experience-list"></div>
+          </section>
+
+          <section class="section-card">
+            <div class="section-heading">
+              <span class="section-number">03</span>
+              <h2>UNNECESSARY INVENTIONS</h2>
+              <span class="section-caption">FEATURED PROJECTS</span>
+            </div>
+            <div id="projects" class="projects-list"></div>
+          </section>
+        </div>
+
+        <aside class="sidebar">
+          <section class="section-card">
+            <div class="section-heading">
+              <span class="section-number">04</span>
+              <h2>SKILL ISSUES</h2>
+            </div>
+            <div id="skills" class="skills-list"></div>
+          </section>
+
+          <section class="section-card">
+            <div class="section-heading">
+              <span class="section-number">05</span>
+              <h2>EDUCATION</h2>
+            </div>
+            <div class="education">
+              <div class="education-icon">∑</div>
+              <h3 id="degree"></h3>
+              <p id="university"></p>
+              <span id="education-year"></span>
+              <div class="fake-seal">UNACCREDITED</div>
+            </div>
+          </section>
+
+          <section class="section-card">
+            <div class="section-heading">
+              <span class="section-number">06</span>
+              <h2>LEGENDARY FAILURES</h2>
+            </div>
+            <ul id="achievements" class="achievement-list"></ul>
+          </section>
+
+          <section class="section-card salary-card">
+            <div class="section-heading">
+              <span class="section-number">07</span>
+              <h2>EXPECTED COMPENSATION</h2>
+            </div>
+            <div class="salary" id="salary"></div>
+            <p>Payment accepted in imaginary currency, snacks, and suspiciously large bags of potatoes.</p>
+          </section>
+        </aside>
+      </div>
+
+      <section class="end-card">
+        <div class="end-kicker">YOU HAVE WITNESSED SOMETHING UNNECESSARY</div>
+        <h2>Hire this disaster?</h2>
+        <p>Absolutely not. But you can summon another one.</p>
+        <button id="generate-bottom" class="refresh-button large" type="button">
+          ⟳ GENERATE ANOTHER HUMAN
+        </button>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-brand">✳ CHAOSFOLIO</div>
+    <p>All profiles are fictional. All qualifications are suspicious.</p>
+    <p class="footer-id">blssnvj21 · NO DATABASE · NO MEMORY · PURE CHAOS</p>
+  </footer>
+</body>
+</html>
