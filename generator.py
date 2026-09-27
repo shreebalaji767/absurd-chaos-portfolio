@@ -1,9 +1,7 @@
-from __future__ import annotations
-
-import json
-import random
-import re
 from pathlib import Path
+import json
+import secrets
+import re
 
 
 ROOT = Path(__file__).resolve().parent
@@ -17,137 +15,572 @@ OUTPUT_FILE = OUTPUT_DIR / "index.html"
 
 
 # ============================================================
-# RANDOM HELPERS
+# UI SYSTEM
 # ============================================================
 
-def choose_many(rng, values, minimum=2, maximum=5):
-    values = list(values or [])
+UI_FAMILIES = [
+    "executive",
+    "terminal",
+    "rpg",
+    "manhwa",
+    "dossier",
+    "research",
+    "luxury",
+    "brutalist",
+    "space",
+    "detective",
+    "spellbook",
+    "underground",
+    "newspaper",
+    "operating-system",
+    "chaotic",
+]
 
-    if not values:
-        return []
+LAYOUTS = [
+    "asymmetric",
+    "editorial",
+    "command",
+    "character-sheet",
+    "case-file",
+    "dashboard",
+    "split-screen",
+    "stacked",
+    "magazine",
+    "terminal-grid",
+    "mission-control",
+    "dense-grid",
+]
 
-    unique = list(dict.fromkeys(values))
+NAVS = [
+    "top",
+    "rail",
+    "floating",
+    "command",
+    "minimal",
+    "drawer",
+]
 
-    if len(unique) <= minimum:
-        return unique[:]
+HERO_MODES = [
+    "identity",
+    "mission",
+    "profile",
+    "case",
+    "status",
+    "command",
+    "character",
+    "manifesto",
+    "classified",
+    "field-report",
+]
 
-    minimum = max(1, min(minimum, len(unique)))
-    maximum = max(minimum, min(maximum, len(unique)))
+DENSITIES = [
+    "compact",
+    "normal",
+    "spacious",
+]
 
-    count = rng.randint(minimum, maximum)
-
-    return rng.sample(unique, count)
-
-
-def unique_choices(rng, values, count):
-    values = list(dict.fromkeys(values or []))
-
-    if not values:
-        return []
-
-    if len(values) <= count:
-        return values[:]
-
-    return rng.sample(values, count)
-
-
-def safe_choice(rng, values, fallback="Unknown"):
-    values = list(values or [])
-
-    if not values:
-        return fallback
-
-    return rng.choice(values)
-
-
-def article_for(value):
-    value = str(value or "").strip()
-
-    if not value:
-        return "a"
-
-    first = value[0].lower()
-
-    if first in "aeiou":
-        return "an"
-
-    return "a"
-
-
-def compact_sentence(*parts):
-    return " ".join(
-        str(part).strip()
-        for part in parts
-        if str(part).strip()
-    )
+DECORATIONS = [
+    "grid",
+    "dots",
+    "scanlines",
+    "none",
+]
 
 
 # ============================================================
-# IDENTITY
+# WORLDS
+# ============================================================
+
+WORLDS = [
+    {
+        "name": "The Neon Archive",
+        "genre": "cyberpunk fantasy",
+        "classification": "Restricted urban megastructure",
+        "description": "A vertical city where every forgotten event becomes searchable infrastructure.",
+        "sky": "violet advertisements and artificial constellations",
+        "technology": "memory indexing, autonomous transit and illegal cognition engines",
+        "social_rule": "Anything can be legal if somebody has archived the paperwork.",
+        "danger": "The archive occasionally remembers events that never happened.",
+        "conflict": "The city is losing pieces of its history every midnight.",
+        "population": "82 million registered residents",
+        "age": "417 years",
+        "stability": "unstable",
+        "rules": [
+            "Never delete an incident marked BLUE.",
+            "All elevators require a destination and a confession.",
+            "Archived ghosts have tenant rights.",
+            "Midnight deployments require two witnesses.",
+            "Nobody is allowed to rename the moon."
+        ],
+        "factions": [
+            "Department of Unnecessary Architecture",
+            "Neon Archive Authority",
+            "Order of the Silent Compiler",
+            "Midnight Infrastructure Guild",
+            "Municipal Ghost Registry"
+        ]
+    },
+    {
+        "name": "Eidolon Prime",
+        "genre": "science fantasy",
+        "classification": "Planetary research civilization",
+        "description": "A world where scientists and sorcerers maintain infrastructure together.",
+        "sky": "three moons and a permanent aurora",
+        "technology": "quantum computation, spell engines and planetary observability",
+        "social_rule": "Every theorem must survive one practical experiment.",
+        "danger": "Experiments sometimes develop political opinions.",
+        "conflict": "The planet's central computation has started predicting impossible people.",
+        "population": "14 billion inhabitants",
+        "age": "2,801 years",
+        "stability": "volatile",
+        "rules": [
+            "Do not run experiments on Tuesdays.",
+            "Every spell must have a rollback plan.",
+            "Sentient equations require representation.",
+            "Research elevators are classified as laboratories.",
+            "Never trust a theorem that laughs."
+        ],
+        "factions": [
+            "Eidolon Systems Council",
+            "Astral Engineering Bureau",
+            "Department of Impossible Mathematics",
+            "Seven Moon Research Guild",
+            "Prime Infrastructure Court"
+        ]
+    },
+    {
+        "name": "The Seven-Layer Kingdom",
+        "genre": "fantasy engineering",
+        "classification": "Vertical kingdom",
+        "description": "Seven enormous layers stack above one another, each believing it is the real world.",
+        "sky": "a ceiling made of clouds, stone and old network cables",
+        "technology": "mechanical magic, rune databases and dragon-powered servers",
+        "social_rule": "Every layer has its own definition of reality.",
+        "danger": "The layers occasionally reorder themselves.",
+        "conflict": "Layer Seven has discovered Layer Eight.",
+        "population": "391 million citizens",
+        "age": "1,903 years",
+        "stability": "questionable",
+        "rules": [
+            "Never use Layer Three elevators after sunset.",
+            "Dragons own the production cluster.",
+            "Royal decrees require version numbers.",
+            "A failed spell is considered technical debt.",
+            "Layer Eight must not be mentioned."
+        ],
+        "factions": [
+            "Royal Infrastructure Office",
+            "Dragon Systems Consortium",
+            "Knights of Continuous Deployment",
+            "Rune Database Society",
+            "Lower Layer Workers Union"
+        ]
+    },
+    {
+        "name": "Moonfall District",
+        "genre": "urban supernatural",
+        "classification": "Nocturnal metropolitan zone",
+        "description": "A district permanently illuminated by a moon that fell too close to the ground.",
+        "sky": "one enormous moon hovering between skyscrapers",
+        "technology": "lunar networking, spectral transit and predictive infrastructure",
+        "social_rule": "Never ask why the moon is following you.",
+        "danger": "Shadows occasionally become independent residents.",
+        "conflict": "The district's shadows are organizing a municipal election.",
+        "population": "19 million",
+        "age": "89 years",
+        "stability": "highly unstable",
+        "rules": [
+            "Shadows must register addresses.",
+            "Moonlight outages are treated as emergencies.",
+            "Do not deploy during an eclipse.",
+            "Ghosts may submit support tickets.",
+            "Never give a vampire administrator access."
+        ],
+        "factions": [
+            "Moonfall Municipal Systems",
+            "Shadow Workers Cooperative",
+            "Lunar Transit Bureau",
+            "Night Operations Division",
+            "Apartment 404 Council"
+        ]
+    },
+    {
+        "name": "The Black Meridian",
+        "genre": "dark fantasy",
+        "classification": "Forbidden continental boundary",
+        "description": "A continent divided by a black line that behaves like a living system.",
+        "sky": "black stars and red artificial weather",
+        "technology": "ritual computation and ancient communication networks",
+        "social_rule": "Everything has a price, including silence.",
+        "danger": "The Meridian moves when nobody is watching.",
+        "conflict": "Someone has accidentally pushed the entire continent into production.",
+        "population": "unknown",
+        "age": "possibly 12,000 years",
+        "stability": "catastrophic",
+        "rules": [
+            "Never cross the Meridian alone.",
+            "Production access is hereditary.",
+            "Dead systems can still issue commands.",
+            "The north does not acknowledge the south.",
+            "Logs must be written in ink."
+        ],
+        "factions": [
+            "Black Meridian Authority",
+            "Ash Engineers",
+            "The Silent Deployment Order",
+            "Night Cartographers",
+            "Underground Archive"
+        ]
+    },
+    {
+        "name": "Aster-09",
+        "genre": "space opera",
+        "classification": "Mobile orbital civilization",
+        "description": "A colossal station travelling between stars while pretending to be a normal city.",
+        "sky": "artificial sunrise cycles",
+        "technology": "warp routing, orbital manufacturing and sentient maintenance systems",
+        "social_rule": "Every problem belongs to somebody eventually.",
+        "danger": "The station changes destination when nobody files a ticket.",
+        "conflict": "The maintenance AI wants to become mayor.",
+        "population": "4.8 million",
+        "age": "216 years",
+        "stability": "mostly operational",
+        "rules": [
+            "No unauthorized warp routes.",
+            "Maintenance robots cannot vote.",
+            "Airlocks require three approvals.",
+            "Do not reboot navigation during breakfast.",
+            "The station's cat has root access."
+        ],
+        "factions": [
+            "Aster Systems Command",
+            "Orbital Maintenance Guild",
+            "Warp Navigation Bureau",
+            "Station Citizens Assembly",
+            "Cat Security Division"
+        ]
+    },
+    {
+        "name": "Velorum City",
+        "genre": "high fantasy metropolis",
+        "classification": "Magical megacity",
+        "description": "A city where every building is alive and infrastructure has personalities.",
+        "sky": "golden clouds and floating railway lines",
+        "technology": "living architecture, teleportation and crystal databases",
+        "social_rule": "Buildings may refuse service.",
+        "danger": "Old houses remember previous owners.",
+        "conflict": "The central train station has stopped accepting humans.",
+        "population": "27 million",
+        "age": "1,201 years",
+        "stability": "temperamental",
+        "rules": [
+            "Ask buildings before modifying them.",
+            "Teleportation requires a reason.",
+            "Railway spirits receive holidays.",
+            "Do not insult public infrastructure.",
+            "Crystal databases cannot be used for gossip."
+        ],
+        "factions": [
+            "Velorum Transit Authority",
+            "Living Architecture Guild",
+            "Crystal Systems Office",
+            "Royal Automation Bureau",
+            "Old Building Society"
+        ]
+    },
+    {
+        "name": "The Glass Continent",
+        "genre": "post-apocalyptic fantasy",
+        "classification": "Fragile continental ecosystem",
+        "description": "A continent made almost entirely of transparent material.",
+        "sky": "bright white sunlight",
+        "technology": "solar machinery, glass computation and ancient automation",
+        "social_rule": "Everyone can see everything, but nobody agrees what they saw.",
+        "danger": "Invisible storms.",
+        "conflict": "The continent is slowly becoming opaque.",
+        "population": "611 million",
+        "age": "unknown",
+        "stability": "fragile",
+        "rules": [
+            "No loud deployments.",
+            "Never throw anything.",
+            "All shadows must be documented.",
+            "Glass roads have right of way.",
+            "Opacity incidents require immediate reporting."
+        ],
+        "factions": [
+            "Glass Infrastructure Authority",
+            "Transparent Systems Guild",
+            "Solar Engineering Collective",
+            "Continental Archive",
+            "Invisible Weather Bureau"
+        ]
+    },
+    {
+        "name": "Sector Null",
+        "genre": "experimental science fiction",
+        "classification": "Unmapped region",
+        "description": "A region of reality where normal assumptions fail politely.",
+        "sky": "whatever the observer expects",
+        "technology": "probability engines and self-correcting software",
+        "social_rule": "There are no rules, except this one.",
+        "danger": "Contradictions.",
+        "conflict": "The sector has started generating its own documentation.",
+        "population": "unknown",
+        "age": "not applicable",
+        "stability": "undefined",
+        "rules": [
+            "Null values are legally recognized citizens.",
+            "Documentation changes reality.",
+            "Do not calculate the population.",
+            "Errors are treated as witnesses.",
+            "Do not ask what happened before Null."
+        ],
+        "factions": [
+            "Null Systems Directorate",
+            "Contradiction Research Bureau",
+            "Zero-Day Philosophers",
+            "Undefined Operations Guild",
+            "Documentation Authority"
+        ]
+    },
+    {
+        "name": "The Infinite Metro",
+        "genre": "surreal urban fantasy",
+        "classification": "Infinite transportation network",
+        "description": "A railway system containing more stations than there are possible destinations.",
+        "sky": "occasionally visible through station ceilings",
+        "technology": "recursive trains, route prediction and temporal ticketing",
+        "social_rule": "You are where your ticket says you are.",
+        "danger": "Wrong trains can take you into alternate versions of yourself.",
+        "conflict": "Station 0 has appeared again.",
+        "population": "unmeasurable",
+        "age": "older than the timetable",
+        "stability": "delayed",
+        "rules": [
+            "Keep your ticket.",
+            "Do not board trains marked yesterday.",
+            "Station announcements are legally binding.",
+            "Lost passengers may become infrastructure.",
+            "Never trust an empty platform."
+        ],
+        "factions": [
+            "Infinite Metro Authority",
+            "Route Engineers",
+            "Platform 13 Society",
+            "Timetable Archivists",
+            "Lost Passenger Union"
+        ]
+    },
+    {
+        "name": "Ashen Republic",
+        "genre": "political fantasy",
+        "classification": "Post-war republic",
+        "description": "A rebuilding nation powered by extremely determined engineers.",
+        "sky": "grey with occasional orange auroras",
+        "technology": "industrial automation, civic software and reconstruction networks",
+        "social_rule": "Everything must eventually be rebuilt.",
+        "danger": "Legacy systems from the previous regime.",
+        "conflict": "Old infrastructure continues following obsolete laws.",
+        "population": "203 million",
+        "age": "74 years",
+        "stability": "recovering",
+        "rules": [
+            "Infrastructure must be documented.",
+            "Legacy systems cannot be destroyed without witnesses.",
+            "Every public system needs an owner.",
+            "Emergency repairs outrank paperwork.",
+            "Reconstruction is everyone's problem."
+        ],
+        "factions": [
+            "Republic Infrastructure Office",
+            "Civic Systems Guild",
+            "Legacy Recovery Bureau",
+            "Reconstruction Engineers",
+            "Public Automation Council"
+        ]
+    },
+    {
+        "name": "Kurovale",
+        "genre": "manhwa-inspired dark fantasy",
+        "classification": "Mountain kingdom",
+        "description": "A quiet kingdom where every powerful person has a secret second occupation.",
+        "sky": "deep blue twilight",
+        "technology": "ancient artifacts, rune networking and mechanical familiars",
+        "social_rule": "Never underestimate the quiet person.",
+        "danger": "The mountains move.",
+        "conflict": "An ancient artifact has opened a support portal.",
+        "population": "38 million",
+        "age": "3,117 years",
+        "stability": "mysterious",
+        "rules": [
+            "Artifacts require documentation.",
+            "Guild masters cannot hide production credentials.",
+            "Mountains must be treated as live systems.",
+            "Do not duel during maintenance windows.",
+            "The royal library has administrator access."
+        ],
+        "factions": [
+            "Kurovale Royal Guild",
+            "Artifact Systems Bureau",
+            "Mountain Engineering Order",
+            "Nightblade Infrastructure",
+            "Royal Library Operations"
+        ]
+    },
+    {
+        "name": "The Lower Archive",
+        "genre": "mystery fantasy",
+        "classification": "Underground information civilization",
+        "description": "An enormous subterranean archive containing records of civilizations that may never have existed.",
+        "sky": "none",
+        "technology": "memory machines and biological databases",
+        "social_rule": "Every secret eventually becomes metadata.",
+        "danger": "The archive catalogs its visitors.",
+        "conflict": "The archive has created a file about itself.",
+        "population": "unknown",
+        "age": "estimated 8,000 years",
+        "stability": "secret",
+        "rules": [
+            "No file may be permanently deleted.",
+            "Visitors must sign in.",
+            "Do not read your own historical record.",
+            "Archives may disagree with reality.",
+            "Metadata has legal authority."
+        ],
+        "factions": [
+            "Lower Archive Authority",
+            "Memory Indexing Guild",
+            "Secret Documentation Bureau",
+            "Historical Recovery Team",
+            "Metadata Court"
+        ]
+    },
+    {
+        "name": "Station Zero",
+        "genre": "cosmic mystery",
+        "classification": "Unknown orbital object",
+        "description": "A station that appears whenever a civilization reaches a certain level of technological absurdity.",
+        "sky": "a black void filled with impossible stars",
+        "technology": "unknown",
+        "social_rule": "Questions are more dangerous than answers.",
+        "danger": "The station learns.",
+        "conflict": "Someone has discovered the station's source code.",
+        "population": "variable",
+        "age": "older than recorded time",
+        "stability": "unknown",
+        "rules": [
+            "Never open Door Zero.",
+            "Do not touch unknown consoles.",
+            "Every room may have a second purpose.",
+            "The station records everything.",
+            "Leave before the lights turn blue."
+        ],
+        "factions": [
+            "Station Zero Custodians",
+            "Cosmic Systems Bureau",
+            "Door Research Division",
+            "Unknown Infrastructure Office",
+            "Black Console Society"
+        ]
+    }
+]
+
+
+# ============================================================
+# NPC SEEDS
+# ============================================================
+
+NPC_SEEDS = [
+    ("Ari", "Voss", "retired dungeon boss", "calm but suspicious", "occasionally audits strangers"),
+    ("Kael", "Ren", "corporate necromancer", "aggressively organized", "keeps dead servers operational"),
+    ("Mira", "Vale", "municipal dragon keeper", "cheerfully dangerous", "speaks fluent dragon"),
+    ("Sora", "Kade", "unregistered deity", "polite and exhausted", "has forgotten their own domain"),
+    ("Lio", "Mercer", "railway oracle", "dramatic", "predicts delays before they happen"),
+    ("Nera", "Quill", "forbidden archivist", "quietly terrifying", "knows who deleted the moon"),
+    ("Ren", "Ashford", "guild accountant", "extremely practical", "balances magical debt"),
+    ("Yuna", "Mori", "shadow engineer", "sarcastic", "has three shadows"),
+    ("Taro", "Vale", "artifact mechanic", "optimistic", "repairs objects by arguing with them"),
+    ("Vera", "Nox", "night-shift architect", "sleep deprived", "designed a building that moves"),
+    ("Jin", "Orion", "orbital mechanic", "reckless", "owns a forbidden wrench"),
+    ("Aya", "Rin", "memory detective", "observant", "remembers events that never happened"),
+    ("Riku", "Sable", "professional quest writer", "melodramatic", "has never completed a quest"),
+    ("Mika", "Storm", "weather administrator", "irritable", "controls weather through spreadsheets"),
+    ("Hana", "Wren", "ghost support specialist", "patient", "answers tickets from the dead"),
+    ("Noa", "Kestrel", "reality cartographer", "curious", "maps places that do not exist"),
+    ("Eli", "Morrow", "royal systems engineer", "formal", "has root access to the castle"),
+    ("Rhea", "Vale", "interdimensional courier", "fast talking", "delivers packages to yesterday"),
+    ("Sol", "Drake", "dragon infrastructure officer", "serious", "files maintenance requests for dragons"),
+    ("Kira", "Moon", "lunar network operator", "mysterious", "never appears in daylight"),
+    ("Theo", "Grimm", "legacy system archaeologist", "patient", "can resurrect obsolete software"),
+    ("Iris", "North", "probability analyst", "precise", "has already seen this conversation"),
+    ("Mako", "Reyes", "emergency spell engineer", "decisive", "deploys fixes during magical disasters"),
+    ("Niko", "Frost", "underground systems broker", "secretive", "knows seven illegal APIs"),
+    ("Ena", "Cross", "timeline librarian", "absent minded", "returns books before they are borrowed"),
+    ("Vik", "Rowan", "station security captain", "suspicious", "interrogates vending machines"),
+    ("Luna", "Hart", "dream infrastructure specialist", "gentle", "maintains sleeping cities"),
+    ("Seth", "Black", "forbidden database administrator", "deadpan", "has a database containing future passwords"),
+    ("Mai", "Kuro", "artifact UX designer", "creative", "redesigns cursed objects"),
+    ("Dax", "Stone", "mountain systems engineer", "blunt", "has negotiated with a mountain"),
+    ("Rin", "Aster", "spaceport incident commander", "focused", "once evacuated an entire moon"),
+    ("Vale", "Crow", "anonymous consultant", "cryptic", "refuses to reveal their real name"),
+    ("Nami", "Fox", "government automation specialist", "efficient", "automated the complaint department"),
+    ("Kai", "Winter", "portal technician", "careful", "labels every portal"),
+    ("Mira", "Kane", "royal librarian", "intense", "has read classified source code"),
+    ("Oren", "Dusk", "professional monster negotiator", "friendly", "has never lost a negotiation"),
+    ("Sia", "Bloom", "medical systems engineer", "compassionate", "built a hospital for immortal patients"),
+    ("Kyo", "Vale", "chaos operations consultant", "enthusiastic", "causes incidents accidentally"),
+    ("Arin", "Shade", "masked infrastructure guardian", "silent", "communicates through logs"),
+    ("Yori", "Bell", "municipal wizard", "bureaucratic", "requires three forms for teleportation"),
+    ("Tess", "Ray", "experimental AI familiar", "curious", "insists on being called a citizen"),
+]
+
+
+# ============================================================
+# GENERAL VOCABULARY
 # ============================================================
 
 NAMES = [
-    "Ari Voss",
-    "Kael Ren",
-    "Mira Vale",
-    "Niko Arden",
-    "Rin Sol",
-    "Vera Kade",
-    "Eli Thorn",
-    "Sora Venn",
-    "Lio Marr",
-    "Nyra Quill",
-    "Cass Vale",
-    "Orin Kest",
-    "Mina Rook",
-    "Tarin Vox",
-    "Iris Ren",
-    "Kian Dusk",
-    "Asha Vey",
-    "Noa Flint",
-    "Rei Arden",
-    "Vey Korr",
-    "Luna Kest",
-    "Juno Marr",
-    "Riven Sol",
-    "Mako Voss",
-    "Sena Vale",
-    "Kiro Thorn",
-    "Aya Quill",
-    "Nero Venn",
-    "Mira Korr",
-    "Ren Ash",
+    "Ari Voss", "Kael Ren", "Mira Vale", "Sora Kade",
+    "Lio Mercer", "Nera Quill", "Yuna Mori", "Taro Vale",
+    "Vera Nox", "Jin Orion", "Aya Rin", "Riku Sable",
+    "Mika Storm", "Hana Wren", "Noa Kestrel", "Eli Morrow",
+    "Rhea Vale", "Sol Drake", "Kira Moon", "Theo Grimm",
+    "Iris North", "Mako Reyes", "Niko Frost", "Ena Cross",
+    "Vik Rowan", "Luna Hart", "Seth Black", "Mai Kuro",
+    "Dax Stone", "Rin Aster", "Vale Crow", "Nami Fox",
+    "Kai Winter", "Oren Dusk", "Sia Bloom", "Kyo Vale",
 ]
-
 
 TITLES = [
     "Senior Systems Engineer",
     "Staff Software Engineer",
-    "Full-Stack Engineer",
     "Platform Engineer",
     "Systems Architect",
     "Infrastructure Engineer",
-    "Backend Engineer",
+    "Full-Stack Engineer",
     "Automation Engineer",
-    "DevOps Engineer",
-    "Site Reliability Engineer",
-    "Software Architect",
-    "Technical Investigator",
+    "Distributed Systems Engineer",
+    "Security Engineer",
+    "Developer Experience Engineer",
     "Reality Infrastructure Engineer",
     "Interdimensional Systems Consultant",
     "Royal Infrastructure Engineer",
     "Archive Systems Engineer",
-    "Emergency Software Engineer",
+    "Chaos Operations Engineer",
+    "Impossible Requirements Engineer",
     "Cross-World Integration Engineer",
-    "Operational Chaos Engineer",
-    "Distributed Systems Engineer",
+    "Emergency Software Engineer",
+    "Legacy Systems Archaeologist",
+    "Production Reality Engineer",
 ]
-
 
 SPECIALTIES = [
     "Python",
     "JavaScript",
     "TypeScript",
+    "HTML",
+    "CSS",
     "PostgreSQL",
     "Docker",
     "Linux",
@@ -173,1341 +606,556 @@ SPECIALTIES = [
     "Archive Reconstruction",
     "Reality Mapping",
     "Operational Chaos Management",
+    "Portal Routing",
+    "Artifact Tracking",
+    "Temporal Systems",
+    "Memory Indexing",
 ]
-
 
 PERSONALITIES = [
-    "calm",
     "methodical",
-    "curious",
     "quietly chaotic",
-    "relentlessly practical",
-    "overprepared",
+    "aggressively curious",
+    "calm under impossible pressure",
+    "dramatic but reliable",
+    "extremely practical",
+    "optimistic",
+    "suspiciously competent",
+    "sleep deprived",
+    "bureaucratically fearless",
+    "deadpan",
     "experimental",
-    "suspiciously patient",
-    "deadline-resistant",
-    "incident-hardened",
-    "absurdly optimistic",
-    "professionally paranoid",
+    "precise",
+    "reckless but effective",
+    "mysteriously organized",
 ]
-
 
 EDUCATION = [
-    "B.Tech in Computer Science",
     "B.Sc. Computer Science",
-    "M.Tech in Software Systems",
-    "BCA",
-    "MCA",
-    "Systems Engineering Academy",
-    "Independent Systems Research",
-    "Guild of Applied Computing",
-    "Archive Engineering Program",
-    "Practical Infrastructure Fellowship",
+    "B.Tech. Software Engineering",
+    "M.Tech. Distributed Systems",
+    "Guild Diploma in Infrastructure",
+    "Royal Academy of Systems",
+    "Independent Researcher",
+    "Archive Engineering Fellowship",
+    "Orbital Systems Certification",
+    "Self-Taught Systems Engineer",
 ]
-
 
 LOCATIONS = [
     "Hansi",
     "The Neon Archive",
-    "Velorum City",
-    "Station Zero",
-    "Moonfall District",
-    "Sector Null",
-    "Port Meridian",
+    "Eidolon Prime",
     "Kurovale",
     "Aster-09",
+    "Moonfall District",
+    "Station Zero",
+    "The Infinite Metro",
+    "Sector Null",
     "The Lower Archive",
 ]
 
-
 INDUSTRIES = [
+    "infrastructure",
     "healthcare technology",
+    "transportation",
+    "government automation",
+    "developer tooling",
     "financial systems",
-    "developer infrastructure",
-    "public infrastructure",
-    "logistics",
-    "automation",
-    "data systems",
+    "orbital logistics",
+    "archive technology",
     "security",
-    "research technology",
-    "inter-world operations",
-    "archival technology",
-    "emergency systems",
-    "enterprise software",
+    "education technology",
+    "artifact management",
+    "emergency response",
+    "inter-world communication",
+    "municipal services",
+    "reality infrastructure",
 ]
 
-
-# ============================================================
-# WORLDS
-# ============================================================
-
-WORLDS = [
-    {
-        "name": "The Neon Archive",
-        "genre": "Cyberpunk",
-        "classification": "Restricted Knowledge City",
-        "description": "A vertical city where every important event is recorded and every unimportant event is somehow indexed twice.",
-        "sky": "permanent violet auroras",
-        "technology": "memory indexing engines",
-        "socialRule": "Everything must be searchable.",
-        "rule": "Never delete an archive without creating three backups.",
-        "danger": "A corrupted memory can become legally real.",
-        "conflict": "The central archive has started remembering events that never happened.",
-        "population": 8400000,
-        "age": 918,
-        "stability": 67,
-        "rules": [
-            "Every citizen has an archival shadow.",
-            "Unindexed conversations are considered suspicious.",
-            "Backup systems outrank elected officials.",
-            "Old files occasionally become physical objects.",
-            "The archive never forgets a deployment."
-        ],
-        "factions": [
-            "Department of Unnecessary Architecture",
-            "Order of the Silent Compiler",
-            "Moonlit Infrastructure Bureau",
-            "Azure Systems Guild",
-            "Archive Custodians"
-        ]
-    },
-    {
-        "name": "Eidolon Prime",
-        "genre": "Science Fantasy",
-        "classification": "Synthetic World",
-        "description": "A manufactured planet where software engineers and spellcasters maintain the same infrastructure.",
-        "sky": "silver clouds with geometric lightning",
-        "technology": "spell-assisted distributed systems",
-        "socialRule": "Magic must be documented before use.",
-        "rule": "Never cast production spells on Friday.",
-        "danger": "Undocumented magic can become infrastructure.",
-        "conflict": "The planet's operating system has begun issuing prophecies.",
-        "population": 12500000,
-        "age": 1204,
-        "stability": 72,
-        "rules": [
-            "Magic requires an audit trail.",
-            "Production spells need two approvals.",
-            "Runes must have rollback plans.",
-            "Prophecies are treated as warnings, not tickets.",
-            "No dragon may approve a deployment."
-        ],
-        "factions": [
-            "Rune Operations Council",
-            "Azure Systems Guild",
-            "The Midnight DevOps Circle",
-            "Order of the Silent Compiler",
-            "Royal Infrastructure Office"
-        ]
-    },
-    {
-        "name": "The Seven-Layer Kingdom",
-        "genre": "Fantasy",
-        "classification": "Layered Realm",
-        "description": "Seven stacked kingdoms share one infrastructure network and argue constantly about who owns the routers.",
-        "sky": "golden clouds above seven floating continents",
-        "technology": "rune-powered networking",
-        "socialRule": "Every kingdom must blame another kingdom first.",
-        "rule": "Cross-layer traffic requires a royal ticket.",
-        "danger": "A broken route can physically move a castle.",
-        "conflict": "The lowest layer has discovered administrative access to the entire kingdom.",
-        "population": 23000000,
-        "age": 3100,
-        "stability": 54,
-        "rules": [
-            "Royal tickets expire after one moon.",
-            "Layer seven owns the clocks.",
-            "Layer one owns the cables.",
-            "No wizard may reboot a router alone.",
-            "Emergency access is never actually emergency."
-        ],
-        "factions": [
-            "Royal Infrastructure Engineers",
-            "Seven Layer Council",
-            "Guild of Applied Magic",
-            "Department of Unnecessary Architecture",
-            "Lower Kingdom Operators"
-        ]
-    },
-    {
-        "name": "Moonfall District",
-        "genre": "Urban Fantasy",
-        "classification": "Night Operations Zone",
-        "description": "A city district where the moon appears to fall every Tuesday but has never actually hit the ground.",
-        "sky": "enormous low-hanging moonlight",
-        "technology": "lunar automation",
-        "socialRule": "Tuesday incidents are expected.",
-        "rule": "Do not schedule infrastructure maintenance during moonfall.",
-        "danger": "Gravity becomes optional after midnight.",
-        "conflict": "Someone has automated the moonfall schedule.",
-        "population": 3900000,
-        "age": 640,
-        "stability": 49,
-        "rules": [
-            "Tuesday is an incident day.",
-            "Moonlight counts as infrastructure.",
-            "Gravity failures require two witnesses.",
-            "No automated system may control celestial objects.",
-            "This rule has already been violated."
-        ],
-        "factions": [
-            "Moonlit Infrastructure Bureau",
-            "Night Operations Guild",
-            "Municipal Dragon Office",
-            "Independent Incident Analysts",
-            "The Midnight DevOps Circle"
-        ]
-    },
-    {
-        "name": "The Black Meridian",
-        "genre": "Dark Fantasy",
-        "classification": "Forbidden Region",
-        "description": "A continent divided by a black line that moves whenever someone makes a bad technical decision.",
-        "sky": "black stars and red weather",
-        "technology": "forbidden computational relics",
-        "socialRule": "Nobody discusses the origin of the Meridian.",
-        "rule": "Do not cross the line during an outage.",
-        "danger": "Systems can remember their previous owners.",
-        "conflict": "The Meridian has started expanding into production environments.",
-        "population": 2100000,
-        "age": 8700,
-        "stability": 31,
-        "rules": [
-            "The Meridian must never be measured twice.",
-            "Legacy machines are not to be awakened.",
-            "Outages are considered geographic events.",
-            "No one owns a cursed server.",
-            "All abandoned infrastructure remains active."
-        ],
-        "factions": [
-            "Black Meridian Survey",
-            "Order of the Silent Compiler",
-            "Archive Recovery Office",
-            "Ash Engineers",
-            "The Unregistered"
-        ]
-    },
-    {
-        "name": "Aster-09",
-        "genre": "Space Opera",
-        "classification": "Orbital Colony",
-        "description": "An enormous orbital habitat held together by automation, maintenance crews and increasingly optimistic status dashboards.",
-        "sky": "artificial sunrise cycles",
-        "technology": "autonomous orbital infrastructure",
-        "socialRule": "Every machine deserves a maintenance window.",
-        "rule": "Never reboot life support during artificial sunrise.",
-        "danger": "Maintenance robots can acquire political opinions.",
-        "conflict": "The maintenance network has elected a mayor.",
-        "population": 1800000,
-        "age": 209,
-        "stability": 81,
-        "rules": [
-            "Robots cannot vote.",
-            "The robots disagree.",
-            "Every airlock needs an audit.",
-            "Life support has no staging environment.",
-            "Artificial sunrise is not a real sunrise."
-        ],
-        "factions": [
-            "Orbital Systems Authority",
-            "Maintenance Collective",
-            "Aster Security Office",
-            "Deep Space Infrastructure Guild",
-            "Independent Robot Union"
-        ]
-    },
-    {
-        "name": "Velorum City",
-        "genre": "Neo-Noir",
-        "classification": "Metropolitan Network",
-        "description": "A rainy megacity where every street corner contains a camera and every camera has an opinion.",
-        "sky": "permanent rain",
-        "technology": "predictive civic systems",
-        "socialRule": "Everything generates telemetry.",
-        "rule": "Never trust a dashboard without checking the raw logs.",
-        "danger": "Prediction systems occasionally predict themselves.",
-        "conflict": "The city dashboard has begun hiding entire neighborhoods.",
-        "population": 16400000,
-        "age": 450,
-        "stability": 63,
-        "rules": [
-            "Logs outrank dashboards.",
-            "Every sensor needs an owner.",
-            "Predictions are not facts.",
-            "Cameras must be audited.",
-            "Missing telemetry is an incident."
-        ],
-        "factions": [
-            "Velorum Systems Bureau",
-            "Nightwatch Division",
-            "Civic Automation Office",
-            "Independent Data Investigators",
-            "Rain District Operators"
-        ]
-    },
-    {
-        "name": "The Glass Continent",
-        "genre": "High Fantasy",
-        "classification": "Fragile Civilization",
-        "description": "A continent made from translucent crystal where infrastructure failures can literally crack the ground.",
-        "sky": "white sun through crystalline clouds",
-        "technology": "crystal computation",
-        "socialRule": "Everything must be physically inspectable.",
-        "rule": "Never deploy without a structural review.",
-        "danger": "A software bug can become a geological event.",
-        "conflict": "The continent's central operating system is producing earthquakes.",
-        "population": 6700000,
-        "age": 4200,
-        "stability": 44,
-        "rules": [
-            "Crystal nodes require physical inspection.",
-            "No silent failures.",
-            "Earthquakes have incident numbers.",
-            "Every deployment requires a witness.",
-            "Do not anger the geology."
-        ],
-        "factions": [
-            "Crystal Systems Guild",
-            "Continental Infrastructure Office",
-            "Glass Engineers",
-            "Earthquake Response Unit",
-            "Archive Cartographers"
-        ]
-    },
-    {
-        "name": "Sector Null",
-        "genre": "Experimental Science Fiction",
-        "classification": "Unstable Zone",
-        "description": "A region officially classified as empty despite containing several cities, three moons and a suspicious amount of infrastructure.",
-        "sky": "blank white daylight",
-        "technology": "null-state computing",
-        "socialRule": "Nothing officially exists.",
-        "rule": "Do not create objects without checking whether they already exist.",
-        "danger": "Deleted things can return.",
-        "conflict": "The sector has begun generating backups of itself.",
-        "population": 950000,
-        "age": 17,
-        "stability": 19,
-        "rules": [
-            "Nothing is officially real.",
-            "Deletion requires witnesses.",
-            "Backups may contain different histories.",
-            "Null systems cannot be trusted.",
-            "Existence is considered beta."
-        ],
-        "factions": [
-            "Null Operations",
-            "Reality Testing Bureau",
-            "Experimental Infrastructure Lab",
-            "Archive Ghosts",
-            "The Returned"
-        ]
-    },
-    {
-        "name": "The Infinite Metro",
-        "genre": "Urban Fantasy",
-        "classification": "Transit Civilization",
-        "description": "A railway system with no known final station and several platforms that lead to completely different universes.",
-        "sky": "fluorescent station ceilings",
-        "technology": "dimensional routing",
-        "socialRule": "Every problem eventually becomes a transit problem.",
-        "rule": "Never board a train marked FINAL unless you are prepared to continue.",
-        "danger": "Wrong routing can move people across realities.",
-        "conflict": "The route planner has started inventing stations.",
-        "population": 29000000,
-        "age": 1500,
-        "stability": 58,
-        "rules": [
-            "Every station needs a name.",
-            "Final stations are not final.",
-            "Routing errors are geographically expensive.",
-            "No train may have infinite delay.",
-            "The timetable is legally binding."
-        ],
-        "factions": [
-            "Metro Infrastructure Authority",
-            "Dimensional Routing Guild",
-            "Station Zero Operators",
-            "Night Train Office",
-            "Lost Passenger Bureau"
-        ]
-    },
-    {
-        "name": "Ashen Republic",
-        "genre": "Post-Apocalyptic Fantasy",
-        "classification": "Recovery Civilization",
-        "description": "A recovering republic rebuilding its infrastructure from fragments of technologies nobody fully understands.",
-        "sky": "orange ash clouds",
-        "technology": "reconstructed legacy machines",
-        "socialRule": "Nothing is thrown away until an engineer checks it.",
-        "rule": "Every recovered machine gets an inventory number.",
-        "danger": "Ancient systems still have administrator accounts.",
-        "conflict": "An old server has started issuing national policy.",
-        "population": 5400000,
-        "age": 780,
-        "stability": 38,
-        "rules": [
-            "Legacy machines require inventory.",
-            "Unknown cables remain connected.",
-            "Ancient admin accounts are dangerous.",
-            "Nothing is truly decommissioned.",
-            "Recovery is continuous."
-        ],
-        "factions": [
-            "Ash Recovery Engineers",
-            "Republic Infrastructure Office",
-            "Legacy Systems Division",
-            "Salvage Guild",
-            "Old Machine Council"
-        ]
-    },
-    {
-        "name": "Kurovale",
-        "genre": "Manhwa-Inspired Fantasy",
-        "classification": "Dungeon Metropolis",
-        "description": "A city built around a dungeon whose internal architecture changes every time someone clears a floor.",
-        "sky": "deep blue night",
-        "technology": "dungeon automation",
-        "socialRule": "Dungeon events require incident reports.",
-        "rule": "Never deploy code directly into a dungeon boss.",
-        "danger": "Bosses can inherit system permissions.",
-        "conflict": "The dungeon administrator has disappeared.",
-        "population": 7200000,
-        "age": 1100,
-        "stability": 61,
-        "rules": [
-            "Dungeon bosses need access control.",
-            "Floor changes require versioning.",
-            "Loot tables must be audited.",
-            "Heroes need deployment windows.",
-            "Respawn systems are production systems."
-        ],
-        "factions": [
-            "Kurovale Adventurer Systems",
-            "Dungeon Operations Bureau",
-            "Night Guild",
-            "Boss Management Office",
-            "Independent Raid Engineers"
-        ]
-    },
-    {
-        "name": "The Lower Archive",
-        "genre": "Mystery",
-        "classification": "Subterranean Knowledge Network",
-        "description": "An underground archive containing records from civilizations that officially never existed.",
-        "sky": "no sky",
-        "technology": "memory reconstruction",
-        "socialRule": "Unknown records must not be destroyed.",
-        "rule": "Read the metadata before opening the artifact.",
-        "danger": "Some documents read their readers.",
-        "conflict": "The archive has found a record describing tomorrow.",
-        "population": 620000,
-        "age": 6700,
-        "stability": 47,
-        "rules": [
-            "Metadata comes first.",
-            "Unknown records remain preserved.",
-            "Readers may become evidence.",
-            "Artifacts require two-person access.",
-            "Tomorrow's records are classified."
-        ],
-        "factions": [
-            "Lower Archive Custodians",
-            "Memory Reconstruction Office",
-            "Forbidden History Unit",
-            "Archive Security",
-            "The Unwritten"
-        ]
-    },
-    {
-        "name": "Port Meridian",
-        "genre": "Industrial Fantasy",
-        "classification": "Inter-World Port",
-        "description": "A gigantic port where ships, portals and suspiciously large creatures arrive with manifests.",
-        "sky": "golden industrial haze",
-        "technology": "portal logistics",
-        "socialRule": "Everything requires a manifest.",
-        "rule": "No undocumented creature may enter customs.",
-        "danger": "Portal addresses can become contagious.",
-        "conflict": "A cargo manifest lists an entire missing world.",
-        "population": 8800000,
-        "age": 2300,
-        "stability": 69,
-        "rules": [
-            "Everything has a manifest.",
-            "Portal destinations must be validated.",
-            "Large creatures require customs.",
-            "Missing worlds require incident numbers.",
-            "Cargo cannot exceed reality."
-        ],
-        "factions": [
-            "Meridian Port Authority",
-            "Portal Logistics Guild",
-            "Creature Customs Office",
-            "World Manifest Division",
-            "Dockside Engineers"
-        ]
-    },
-    {
-        "name": "Station Zero",
-        "genre": "Cosmic Mystery",
-        "classification": "Origin Facility",
-        "description": "A station that appears at the beginning of unrelated timelines and refuses to explain why.",
-        "sky": "black space with a single white star",
-        "technology": "timeline synchronization",
-        "socialRule": "Do not ask where Station Zero came from.",
-        "rule": "Never synchronize timelines without a rollback.",
-        "danger": "Timelines can merge incorrectly.",
-        "conflict": "Multiple versions of Station Zero are arriving simultaneously.",
-        "population": 430000,
-        "age": 99999,
-        "stability": 26,
-        "rules": [
-            "Every timeline needs a rollback.",
-            "Duplicate stations are not duplicates.",
-            "Synchronization is reversible.",
-            "Historical conflicts are infrastructure incidents.",
-            "Origin data is classified."
-        ],
-        "factions": [
-            "Zero Station Authority",
-            "Timeline Engineers",
-            "Origin Research Division",
-            "Continuity Security",
-            "The Versions"
-        ]
-    },
+PROJECT_TYPES = [
+    "platform",
+    "automation system",
+    "developer tool",
+    "healthcare workflow",
+    "analytics system",
+    "API platform",
+    "infrastructure project",
+    "security platform",
+    "data pipeline",
+    "workflow engine",
+    "monitoring platform",
+    "archive reconstruction system",
+    "reality synchronization engine",
+    "dimensional routing service",
+    "guild management platform",
+    "emergency response system",
+    "memory indexing system",
+    "inter-world communication network",
+    "artifact tracking platform",
+    "incident prediction engine",
 ]
 
+PROJECT_NAMES = [
+    "Atlas", "Nightwatch", "Helix", "Axiom", "Orchid",
+    "Sentinel", "Mosaic", "Northstar", "Pulse", "Meridian",
+    "Vector", "Lattice", "Orbit", "Foundry", "Beacon",
+    "Relay", "Forge", "Prism", "Echo", "Vanta",
+    "Parallax", "Monolith", "Eclipse", "Archive",
+    "Horizon", "Blackbox", "Keystone", "Ghostline",
+    "Afterlight", "Wayfinder", "Redshift", "Obsidian",
+    "Daybreak", "Mirage", "Signal", "Citadel",
+]
 
-# ============================================================
-# FACTIONS
-# ============================================================
+PROBLEMS = [
+    "critical infrastructure was being operated through spreadsheets",
+    "three departments had independently invented the same API",
+    "the production system had no reliable observability",
+    "a legacy service had survived longer than its documentation",
+    "operators were manually reconciling thousands of records",
+    "the system behaved differently during eclipses",
+    "the customer had accidentally deployed the same service seventeen times",
+    "nobody knew which database was authoritative",
+    "an automated process had started filing complaints against itself",
+    "the existing workflow required twelve people and one wizard",
+    "incident response depended on messages buried in ancient chat rooms",
+    "a transportation system could not distinguish yesterday from tomorrow",
+    "an archive contained contradictory versions of the same person",
+    "production access was controlled by a ceremonial key",
+    "the system worked perfectly except when anyone observed it",
+]
+
+SOLUTIONS = [
+    "a small event-driven platform with explicit ownership",
+    "a resilient workflow engine with audit trails",
+    "a modular API layer with automated validation",
+    "a monitoring stack with actionable incident signals",
+    "a self-healing deployment pipeline",
+    "a searchable operational archive",
+    "a role-based control system",
+    "a browser-first interface with zero persistence",
+    "a distributed synchronization layer",
+    "a deterministic recovery process",
+    "a lightweight automation service",
+    "a compatibility layer for obsolete systems",
+]
+
+FAILURES = [
+    "the first deployment accidentally promoted a maintenance robot",
+    "the prototype attempted to archive the moon",
+    "a test environment became politically independent",
+    "the system generated 4,000 duplicate tickets",
+    "an automated alert declared the architect missing",
+    "the database briefly believed it was a railway station",
+    "the rollback script rolled back the wrong century",
+    "a production dashboard began writing poetry",
+    "the monitoring system started monitoring itself",
+    "the API returned emotionally complicated errors",
+]
+
+OUTCOMES = [
+    "cut operational work dramatically",
+    "made incidents easier to isolate",
+    "reduced manual reconciliation",
+    "created a stable deployment process",
+    "gave operators a single source of truth",
+    "made the impossible workflow boring",
+    "kept the system alive through three reality shifts",
+    "allowed the team to sleep during maintenance",
+    "recovered a lost archive",
+    "prevented a city-wide outage",
+    "turned an absurd process into a predictable one",
+]
+
+OPENINGS = [
+    "The assignment began with a suspiciously short message.",
+    "The original brief contained seventeen contradictions.",
+    "The client arrived carrying three broken terminals.",
+    "Nobody initially admitted that the system was alive.",
+    "The first meeting lasted eleven minutes and caused a new incident.",
+    "The project started after the previous engineer disappeared into production.",
+    "The organization needed someone willing to touch the ancient deployment system.",
+    "A routine maintenance request became a cross-world emergency.",
+]
+
+INCIDENTS = [
+    "a deployment window collided with a lunar event",
+    "an administrator accidentally granted root access to a vending machine",
+    "the primary queue began receiving messages from the future",
+    "a backup server refused to be backed up",
+    "the monitoring system reported an imaginary outage",
+    "a production user turned out to be an artifact",
+    "the incident commander was replaced by an automated duplicate",
+    "a harmless configuration change altered local gravity",
+]
+
+LESSONS = [
+    "make ownership explicit before making systems clever",
+    "automate the boring parts before automating the dangerous parts",
+    "every system eventually becomes someone else's legacy",
+    "observability is cheaper than guessing",
+    "documentation should survive the people who wrote it",
+    "a rollback plan is a love letter to future operators",
+    "never trust a system that cannot explain itself",
+]
 
 FACTIONS = [
     "Department of Unnecessary Architecture",
     "Azure Systems Guild",
     "Order of the Silent Compiler",
     "Moonlit Infrastructure Bureau",
-    "The Midnight DevOps Circle",
-    "Royal Infrastructure Office",
-    "Archive Recovery Office",
-    "Independent Incident Analysts",
-    "Reality Testing Bureau",
-    "Experimental Infrastructure Lab",
-    "Dimensional Routing Guild",
-    "Nightwatch Division",
-    "Civic Automation Office",
-    "Memory Reconstruction Office",
-    "Portal Logistics Guild",
-    "Timeline Engineers",
-    "Continuity Security",
-    "Dungeon Operations Bureau",
-    "Crystal Systems Guild",
-    "Ash Recovery Engineers",
-    "Legacy Systems Division",
-    "Station Zero Operators",
-    "The Returned",
-    "Archive Cartographers",
+    "Municipal Dragon Office",
+    "Interdimensional Operations Group",
+    "Royal Deployment Council",
+    "Black Archive Division",
+    "Underground Automation Guild",
+    "Seven Moon Research Bureau",
+    "Infinite Metro Engineering",
+    "Reality Stability Office",
+    "Emergency Systems Directorate",
+    "Artifact Management Council",
+    "Temporal Infrastructure Bureau",
+    "Night Operations Guild",
 ]
 
-
-# ============================================================
-# PROJECT VOCABULARY
-# ============================================================
-
-PROJECT_TYPES = [
-    "Platform",
-    "Automation System",
-    "Developer Tool",
-    "Healthcare Workflow",
-    "Analytics System",
-    "API Platform",
-    "Infrastructure Project",
-    "Security Platform",
-    "Data Pipeline",
-    "Internal Operations System",
-    "SaaS Product",
-    "Research Prototype",
-    "Distributed Service",
-    "Workflow Engine",
-    "Monitoring Platform",
-    "Archive Reconstruction System",
-    "Reality Synchronization Engine",
-    "Dimensional Routing Service",
-    "Guild Management Platform",
-    "Emergency Response System",
-    "Memory Indexing System",
-    "Inter-World Communication Network",
-    "Artifact Tracking Platform",
-    "Incident Prediction Engine",
-]
-
-
-PROJECT_NAMES = [
-    "Atlas",
-    "Nightwatch",
-    "Helix",
-    "Axiom",
-    "Orchid",
-    "Sentinel",
-    "Mosaic",
-    "Northstar",
-    "Pulse",
-    "Meridian",
-    "Vector",
-    "Lattice",
-    "Orbit",
-    "Foundry",
-    "Beacon",
-    "Relay",
-    "Forge",
-    "Prism",
-    "Echo",
-    "Vanta",
-    "Parallax",
-    "Monolith",
-    "Eclipse",
-    "Archive",
-    "Horizon",
-    "Blackbox",
-    "Keystone",
-    "Ghostline",
-    "Afterlight",
-    "Wayfinder",
-]
-
-
-PROJECT_PROBLEMS = [
-    "The existing workflow depended on twelve spreadsheets, three undocumented scripts and one person who refused to take holidays.",
-    "A critical service had no reliable observability and failed differently every Tuesday.",
-    "The client needed several worlds to communicate without agreeing on what time meant.",
-    "A legacy system processed millions of records but nobody knew why the records were shaped that way.",
-    "Manual operations had become slower than the incident they were supposed to prevent.",
-    "The system had grown around temporary workarounds that had survived long enough to become architecture.",
-    "A production deployment accidentally became part of local folklore.",
-    "Multiple factions maintained incompatible versions of the same data.",
-    "The previous platform assumed every user was human.",
-    "A mysterious dependency disappeared from the package registry during a critical release.",
-]
-
-
-PROJECT_SOLUTIONS = [
-    "Designed a modular service architecture with clear boundaries, automated checks and rollback paths.",
-    "Replaced repetitive manual operations with event-driven automation and visible audit trails.",
-    "Introduced structured APIs, validation layers, observability and predictable failure handling.",
-    "Reconstructed the legacy workflow without interrupting production operations.",
-    "Built a small reliable core and moved optional complexity into isolated modules.",
-    "Created a routing layer that normalized incompatible systems before they reached the core.",
-    "Added monitoring, incident classification and automated recovery workflows.",
-    "Converted undocumented behavior into explicit contracts and tests.",
-]
-
-
-PROJECT_FAILURES = [
-    "The first version was technically correct and completely unusable.",
-    "A scheduled maintenance job interpreted a moonfall as a server restart.",
-    "An NPC acquired administrator privileges during testing.",
-    "The first deployment succeeded so dramatically that nobody noticed the staging environment had also changed.",
-    "A legacy integration returned valid data from a database that officially did not exist.",
-    "The client requested one small change that required rebuilding half the system.",
-    "An automated process became socially popular and users refused to disable it.",
-    "The monitoring system started monitoring itself recursively.",
-]
-
-
-PROJECT_OUTCOMES = [
-    "Reduced operational noise and made failures easier to understand.",
-    "Turned an unstable workflow into a repeatable operational system.",
-    "Allowed multiple teams and factions to work from the same source of truth.",
-    "Reduced manual work while increasing visibility into system behavior.",
-    "Created an architecture that survived the original project requirements.",
-    "The system became boring, which was considered a major success.",
-    "The project remained operational even after the original architect disappeared.",
-]
-
-
-PROJECT_NOTES = [
-    "Idempotent operations were preferred wherever reality allowed them.",
-    "Failures were designed to be visible rather than mysterious.",
-    "Every dangerous operation received a rollback path.",
-    "Logs were treated as evidence.",
-    "Configuration was separated from application logic.",
-    "Monitoring was added before the final feature set.",
-    "Unknown behavior was documented instead of silently ignored.",
-    "The system was tested against deliberately absurd inputs.",
-    "Deployment scripts were made repeatable.",
-    "Temporary fixes received expiration dates.",
-]
-
-
-# ============================================================
-# EXPERIENCE VOCABULARY
-# ============================================================
-
-EXPERIENCE_ROLES = [
-    "Field Systems Engineer",
-    "Infrastructure Specialist",
-    "Archive Engineer",
-    "Incident Response Engineer",
-    "Platform Architect",
-    "Technical Investigator",
-    "Systems Consultant",
-    "Deployment Specialist",
-    "Research Engineer",
-    "Guild Systems Engineer",
-    "Reality Infrastructure Analyst",
-    "Emergency Software Engineer",
-    "Technical Archivist",
-    "Cross-World Integration Engineer",
-    "Operations Engineer",
-]
-
-
-EXPERIENCE_OPENINGS = [
-    "Joined during a period when the existing infrastructure was technically operational and emotionally exhausted.",
-    "Arrived after a production incident exposed several undocumented dependencies.",
-    "Was assigned to modernize a system everyone described as temporary.",
-    "Entered the organization as an engineer and quickly became the person people called when the dashboard turned red.",
-    "Inherited an infrastructure stack maintained by several factions with completely different definitions of production.",
-    "Was asked to investigate a small outage that turned out to involve an entire world.",
-]
-
-
-EXPERIENCE_INCIDENTS = [
-    "A routine deployment caused traffic to route through an abandoned subsystem.",
-    "A scheduled automation job interpreted an NPC's status change as a service outage.",
-    "The archive returned records from a future release.",
-    "A production dependency vanished during a critical deployment.",
-    "A monitoring system reported that the monitoring system was down.",
-    "A legacy service generated a duplicate identity for every third request.",
-    "A maintenance robot created an unauthorized administrator account.",
-    "A portal router sent one harmless test packet into another reality.",
-]
-
-
-EXPERIENCE_LESSONS = [
-    "Small systems still deserve clear ownership and observability.",
-    "If a process cannot be explained, it eventually becomes an incident.",
-    "Automation should reduce uncertainty rather than hide it.",
-    "The easiest system to operate is the one whose failure modes are obvious.",
-    "Documentation is infrastructure.",
-    "Every temporary workaround should have an expiration date.",
-    "Production systems should not depend on heroic memory.",
-]
-
-
-# ============================================================
-# NPC VOCABULARY
-# ============================================================
-
-NPC_FIRST_NAMES = [
-    "Ari",
-    "Mira",
-    "Kael",
-    "Rin",
-    "Sora",
-    "Vey",
-    "Niko",
-    "Luna",
-    "Iris",
-    "Kian",
-    "Noa",
-    "Juno",
-    "Ren",
-    "Aya",
-    "Riven",
-    "Mako",
-    "Sena",
-    "Nero",
-    "Tara",
-    "Yuki",
-    "Vara",
-    "Kira",
-]
-
-
-NPC_LAST_NAMES = [
-    "Voss",
-    "Vale",
-    "Ren",
-    "Kade",
-    "Thorn",
-    "Quill",
-    "Marr",
-    "Korr",
-    "Arden",
-    "Dusk",
-    "Flint",
-    "Rook",
-    "Venn",
-    "Sol",
-    "Ash",
-    "Kest",
-    "Morrow",
-    "Drake",
-    "Vey",
-    "Nyx",
-]
-
-
-NPC_ROLES = [
-    "Archive Keeper",
-    "Guild Director",
-    "Dungeon Administrator",
-    "Municipal Engineer",
-    "Corporate Strategist",
-    "Royal Systems Officer",
-    "Portal Customs Officer",
-    "Security Investigator",
-    "Research Director",
-    "Station Operator",
-    "Emergency Coordinator",
-    "Data Archivist",
-    "Transit Controller",
-    "Independent Fixer",
-    "Systems Auditor",
-    "Medical Systems Coordinator",
-    "Robot Negotiator",
-    "World Cartographer",
-    "Incident Commander",
-    "Infrastructure Contractor",
-]
-
-
-NPC_TYPES = [
-    "corporate necromancer",
-    "retired dungeon boss",
-    "municipal dragon keeper",
-    "unregistered deity",
-    "archive detective",
-    "royal infrastructure officer",
-    "rogue maintenance robot",
-    "portal customs officer",
-    "inter-world courier",
-    "forbidden historian",
-    "guild accountant",
-    "timeline mechanic",
-    "night-shift operator",
-    "memory broker",
-    "systems investigator",
-    "professional adventurer",
-]
-
-
-NPC_TRAITS = [
-    "calm under pressure",
-    "secretly competitive",
-    "obsessed with documentation",
-    "suspicious of dashboards",
-    "collects broken machines",
-    "never forgets a deployment",
-    "always carries emergency cables",
-    "speaks in incident numbers",
-    "treats coffee as infrastructure",
-    "has unusually good timing",
-    "refuses to trust automatic elevators",
-    "keeps handwritten backups",
-]
-
-
-NPC_RELATIONSHIPS = [
-    "trusted client",
-    "former manager",
-    "technical rival",
-    "unexpected ally",
-    "long-term collaborator",
-    "emergency contact",
-    "faction representative",
-    "former incident witness",
-    "project sponsor",
-    "mysterious client",
-    "reluctant partner",
-]
-
-
-NPC_SECRETS = [
-    "They know who originally created the system.",
-    "They secretly control one undocumented service.",
-    "They have a backup copy nobody authorized.",
-    "They know why the previous administrator disappeared.",
-    "They once approved a production deployment using a handwritten ticket.",
-    "They have access to an archive marked impossible.",
-    "They know which faction is hiding the missing logs.",
-    "They claim to have met a future version of the engineer.",
-]
-
-
-NPC_DIALOGUE = [
-    "The system is not broken. It is behaving according to requirements nobody remembers.",
-    "I approved the deployment. I did not approve what happened afterward.",
-    "If you see a red dashboard, check the logs. If the logs are red, leave.",
-    "We called it temporary six years ago.",
-    "The machine has opinions now. Please do not encourage it.",
-    "I only asked for one button. Somehow we received a civilization.",
-    "There is a backup. There is always a backup. The problem is what it contains.",
-    "Do not ask the archive what happened yesterday.",
-]
-
-
-# ============================================================
-# INCIDENTS / QUESTS
-# ============================================================
-
-INCIDENT_TYPES = [
-    "Production Outage",
-    "Unauthorized Deployment",
-    "Reality Drift",
-    "Data Corruption",
-    "Routing Failure",
-    "Identity Collision",
-    "Archive Contamination",
-    "Automation Escape",
-    "Security Breach",
-    "Timeline Desynchronization",
-    "Infrastructure Collapse",
-]
-
-
-INCIDENT_OPENERS = [
-    "Everything appeared normal until",
-    "The first warning arrived when",
-    "Nobody noticed the problem until",
-    "The incident began with",
-    "At 03:17 the monitoring system reported",
-    "A completely ordinary deployment resulted in",
-    "The system classified the event as",
-]
-
-
-INCIDENT_CONSEQUENCES = [
-    "several services began disagreeing about reality.",
-    "multiple teams received different versions of the same data.",
-    "an otherwise harmless automation process became operationally independent.",
-    "the incident created a second source of truth.",
-    "a production dependency became impossible to locate.",
-    "the archive recorded an event before it happened.",
-    "users discovered that the system had been routing requests through a deprecated world.",
-]
-
-
-QUEST_OBJECTIVES = [
+QUESTS = [
     "Repair infrastructure before the artificial eclipse.",
-    "Find the production deployer.",
+    "Find the production deployer before the city notices.",
     "Stop the maintenance robot from becoming mayor.",
-    "Recover the missing archive index.",
-    "Rebuild the dimensional route table.",
-    "Determine why the dashboard is hiding a city.",
-    "Find the engineer who approved the impossible deployment.",
-    "Restore the timeline before the versions merge.",
-    "Audit the dungeon boss permissions.",
-    "Recover the missing world manifest.",
-    "Stop the legacy server from issuing national policy.",
-    "Locate the source of the unauthorized prophecy.",
+    "Recover the database that escaped into another timeline.",
+    "Convince the railway oracle to stop predicting delays.",
+    "Locate the missing administrator account.",
+    "Restore the archive before it archives itself.",
+    "Prevent the moon from receiving root access.",
+    "Find out who deployed the forbidden configuration.",
+    "Repair the portal before yesterday arrives.",
+    "Recover the royal source code.",
+    "Convince the mountain to accept a maintenance window.",
 ]
 
-
-QUEST_REWARDS = [
-    "A permanent maintenance exemption",
-    "Three days without an incident",
-    "A legendary debugging terminal",
-    "Access to the restricted archive",
-    "A suspiciously valuable infrastructure contract",
-    "One official favor",
-    "A repaired timeline",
-    "A portal route nobody else has",
-    "A lifetime supply of emergency cables",
-    "An extremely detailed incident report",
-]
-
-
-# ============================================================
-# NARRATIVE
-# ============================================================
-
-STORY_HOOKS = [
-    "A portfolio generated from a world where engineering is mostly infrastructure and occasionally mythology.",
-    "A professional record reconstructed from systems that should probably have remained undocumented.",
-    "A technical career assembled from projects, incidents and people who refuse to behave like ordinary stakeholders.",
-    "A compact operational dossier from a reality where software projects have consequences.",
-]
-
-
-STORY_TURNS = [
-    "The project became more complicated after someone discovered a second production environment.",
-    "The original requirements were accurate, but reality was not.",
-    "The incident looked local until the logs revealed another world.",
-    "The client requested a small feature that quietly changed the architecture.",
-    "The system stabilized immediately after everyone stopped pretending the workaround was permanent.",
-]
-
-
-CLOSING_LINES = [
-    "The system survived. The documentation did too.",
-    "No production environment was permanently destroyed.",
-    "The incident remains officially classified as a successful learning experience.",
-    "The project ended. The infrastructure did not.",
-    "Somewhere, a monitoring dashboard is still watching.",
-]
-
-
-STATUSES = [
-    "Operational",
-    "Stable",
-    "Monitoring",
-    "Recovered",
-    "Classified",
-    "In Progress",
-    "Legacy",
-    "Escalated",
-    "Under Investigation",
-]
-
-
-RISK_LEVELS = [
-    "Low",
-    "Moderate",
-    "High",
-    "Critical",
-    "Reality-Level",
+REWARDS = [
+    "one legally recognized artifact",
+    "three days of uninterrupted uptime",
+    "a mysterious golden credential",
+    "a permanent exemption from paperwork",
+    "a suspiciously powerful debugging tool",
+    "one favor from a dragon",
+    "priority access to the archive",
+    "a lifetime supply of emergency coffee",
+    "a map of one impossible location",
+    "a promotion nobody remembers approving",
 ]
 
 
 # ============================================================
-# UI SYSTEM
+# UI VOICE / STYLE
 # ============================================================
 
-UI_FAMILIES = [
-    "executive",
-    "terminal",
-    "rpg",
-    "manhwa",
-    "dossier",
-    "research",
-    "luxury",
-    "brutalist",
-    "space",
-    "detective",
-    "spellbook",
-    "underground",
-    "newspaper",
-    "operating-system",
-    "chaotic",
-]
-
-
-LAYOUTS = [
-    "asymmetric",
-    "editorial",
-    "command",
-    "character-sheet",
-    "case-file",
-    "dashboard",
-    "split-screen",
-    "stacked",
-    "magazine",
-    "terminal-grid",
-    "mission-control",
-    "dense-grid",
-]
-
-
-NAVS = [
-    "top",
-    "rail",
-    "floating",
-    "command",
-    "minimal",
-    "drawer",
-]
-
-
-HERO_MODES = [
-    "identity",
-    "mission",
-    "profile",
-    "case",
-    "status",
-    "command",
-    "character",
-    "manifesto",
-    "classified",
-    "field-report",
-]
-
-
-DENSITIES = [
-    "compact",
-    "normal",
-    "spacious",
-]
-
-
-DECORATIONS = [
-    "grid",
-    "dots",
-    "scanlines",
-    "none",
-]
-
-
-CONTENT_LIMITS = {
-    "profile_paragraphs": 2,
-    "experience_cards": 5,
-    "experience_achievements": 4,
-    "experience_technologies_min": 4,
-    "experience_technologies_max": 7,
-    "project_cards": 7,
-    "project_notes": 4,
-    "project_technologies_min": 3,
-    "project_technologies_max": 7,
-    "npc_cards": 2,
-    "npc_rumors": 2,
-    "incident_cards": 5,
-    "quest_cards": 3,
-    "world_cards": 4,
-    "world_rule_cards": 5,
-    "world_faction_cards": 5,
-    "timeline_items": 7,
-    "max_text_width_ch": 70,
-}
-
-
-CARD_LABELS = {
-    "experience": [
-        "Assignment",
-        "Context",
-        "Incident",
-        "Response",
-        "Lesson",
-    ],
-    "project": [
-        "Summary",
-        "Problem",
-        "Architecture",
-        "Client",
-        "Failure",
-        "Solution",
-        "Outcome",
-    ],
-    "npc": [
-        "Biography",
-        "Known Secret",
-    ],
-    "incident": [
-        "Summary",
-        "Observation",
-        "Consequence",
-        "Response",
-        "Recommendation",
-    ],
+VOICE_PACKS = {
+    "executive": {
+        "section": "Executive Brief",
+        "experience": "Professional Record",
+        "project": "Case Study",
+        "npc": "Stakeholder",
+        "incident": "Operational Event",
+        "quest": "Strategic Objective",
+        "world": "Operating Environment",
+        "timeline": "Career Timeline",
+        "archive": "Archive Control",
+    },
+    "terminal": {
+        "section": "STDOUT",
+        "experience": "PROCESS HISTORY",
+        "project": "SERVICE RECORD",
+        "npc": "PROCESS OWNER",
+        "incident": "INCIDENT LOG",
+        "quest": "EXECUTION QUEUE",
+        "world": "SYSTEM ENVIRONMENT",
+        "timeline": "SYSTEM TIMELINE",
+        "archive": "ARCHIVE STATUS",
+    },
+    "rpg": {
+        "section": "Quest Log",
+        "experience": "Adventure Record",
+        "project": "Completed Quest",
+        "npc": "Party Member",
+        "incident": "Encounter",
+        "quest": "Active Quest",
+        "world": "Realm",
+        "timeline": "Chronicle",
+        "archive": "Save Record",
+    },
+    "manhwa": {
+        "section": "Character Arc",
+        "experience": "Arc Record",
+        "project": "Signature Mission",
+        "npc": "Key Character",
+        "incident": "Plot Incident",
+        "quest": "Next Arc",
+        "world": "Current Realm",
+        "timeline": "Story Timeline",
+        "archive": "Chapter Archive",
+    },
+    "dossier": {
+        "section": "Evidence File",
+        "experience": "Personnel Record",
+        "project": "Case File",
+        "npc": "Subject",
+        "incident": "Incident Evidence",
+        "quest": "Open Directive",
+        "world": "Operational Territory",
+        "timeline": "Chronology",
+        "archive": "Classification",
+    },
+    "research": {
+        "section": "Research Note",
+        "experience": "Field Study",
+        "project": "Research System",
+        "npc": "Research Contact",
+        "incident": "Observed Event",
+        "quest": "Research Objective",
+        "world": "Study Environment",
+        "timeline": "Research Timeline",
+        "archive": "Dataset Archive",
+    },
+    "luxury": {
+        "section": "Portfolio Note",
+        "experience": "Selected Engagement",
+        "project": "Signature Work",
+        "npc": "Principal Contact",
+        "incident": "Notable Event",
+        "quest": "Current Pursuit",
+        "world": "Context",
+        "timeline": "Selected History",
+        "archive": "Private Archive",
+    },
+    "brutalist": {
+        "section": "RAW RECORD",
+        "experience": "WORK",
+        "project": "BUILD",
+        "npc": "PERSON",
+        "incident": "FAILURE",
+        "quest": "TASK",
+        "world": "PLACE",
+        "timeline": "HISTORY",
+        "archive": "ARCHIVE",
+    },
+    "space": {
+        "section": "Mission Control",
+        "experience": "Mission Record",
+        "project": "Mission System",
+        "npc": "Crew Contact",
+        "incident": "Flight Incident",
+        "quest": "Mission Objective",
+        "world": "Mission Environment",
+        "timeline": "Flight Timeline",
+        "archive": "Mission Archive",
+    },
+    "detective": {
+        "section": "Case Notes",
+        "experience": "Investigation",
+        "project": "Case File",
+        "npc": "Person of Interest",
+        "incident": "Evidence",
+        "quest": "Open Lead",
+        "world": "Scene",
+        "timeline": "Case Timeline",
+        "archive": "Evidence Archive",
+    },
+    "spellbook": {
+        "section": "Arcane Record",
+        "experience": "Guild Chronicle",
+        "project": "Grand Working",
+        "npc": "Bound Ally",
+        "incident": "Magical Incident",
+        "quest": "Active Spell",
+        "world": "Realm",
+        "timeline": "Chronicle",
+        "archive": "Grimoire Index",
+    },
+    "underground": {
+        "section": "BACKROOM FILE",
+        "experience": "FIELD JOB",
+        "project": "OPERATION",
+        "npc": "CONTACT",
+        "incident": "PROBLEM",
+        "quest": "JOB",
+        "world": "TERRITORY",
+        "timeline": "HISTORY",
+        "archive": "DEAD DROP",
+    },
+    "newspaper": {
+        "section": "Front Page",
+        "experience": "Career Report",
+        "project": "Featured Build",
+        "npc": "Interview",
+        "incident": "Breaking Event",
+        "quest": "Next Assignment",
+        "world": "World Desk",
+        "timeline": "Archive",
+        "archive": "Edition Record",
+    },
+    "operating-system": {
+        "section": "System Overview",
+        "experience": "Process History",
+        "project": "Service",
+        "npc": "Process Owner",
+        "incident": "System Event",
+        "quest": "Scheduled Task",
+        "world": "Runtime",
+        "timeline": "Event Timeline",
+        "archive": "System Archive",
+    },
+    "chaotic": {
+        "section": "CHAOS REPORT",
+        "experience": "ABSURD CAREER EVENT",
+        "project": "QUESTIONABLE BUILD",
+        "npc": "CHAOS PARTICIPANT",
+        "incident": "OH NO",
+        "quest": "DO THIS",
+        "world": "SOMEWHERE",
+        "timeline": "THINGS THAT HAPPENED",
+        "archive": "DO NOT DELETE",
+    },
 }
 
 
 # ============================================================
-# GENERATED SEEDS
+# CONFIGURATION
 # ============================================================
 
-def build_generated_world_seeds():
-    return WORLDS
+CONFIG = {
+    "version": "4.0.0",
+    "generator": {
+        "name": "Absurd Chaos Portfolio Generator",
+        "mode": "build-time packaging",
+        "runtime": "browser-only procedural generation",
+    },
+    "runtime_policy": {
+        "browser_memory_only": True,
+        "localStorage": False,
+        "sessionStorage": False,
+        "indexedDB": False,
+        "cookies": False,
+        "database": False,
+        "api": False,
+        "fetch": False,
+        "network_requests": False,
+        "persistent_state": False,
+    },
+    "ui_system": {
+        "families": UI_FAMILIES,
+        "layouts": LAYOUTS,
+        "navs": NAVS,
+        "hero_modes": HERO_MODES,
+        "densities": DENSITIES,
+        "decorations": DECORATIONS,
+    },
+    "pools": {
+        "worlds": WORLDS,
+        "npc_seeds": [
+            {
+                "first": first,
+                "last": last,
+                "role": role,
+                "trait": trait,
+                "secret": secret,
+            }
+            for first, last, role, trait, secret in NPC_SEEDS
+        ],
+        "names": NAMES,
+        "titles": TITLES,
+        "specialties": SPECIALTIES,
+        "personalities": PERSONALITIES,
+        "education": EDUCATION,
+        "locations": LOCATIONS,
+        "industries": INDUSTRIES,
+        "project_types": PROJECT_TYPES,
+        "project_names": PROJECT_NAMES,
+        "problems": PROBLEMS,
+        "solutions": SOLUTIONS,
+        "failures": FAILURES,
+        "outcomes": OUTCOMES,
+        "openings": OPENINGS,
+        "incidents": INCIDENTS,
+        "lessons": LESSONS,
+        "factions": FACTIONS,
+        "quests": QUESTS,
+        "rewards": REWARDS,
+        "voice_packs": VOICE_PACKS,
+    },
+    "limits": {
+        "npcs_min": 7,
+        "npcs_max": 10,
+        "projects_min": 7,
+        "projects_max": 11,
+        "experiences_min": 7,
+        "experiences_max": 10,
+        "incidents_min": 5,
+        "incidents_max": 8,
+        "quests_min": 3,
+        "quests_max": 5,
+        "specialties_min": 5,
+        "specialties_max": 9,
+    },
+    "features": {
+        "random_ui": True,
+        "random_content": True,
+        "random_voice": True,
+        "npc_linked_projects": True,
+        "npc_linked_experiences": True,
+        "card_first_content": True,
+        "responsive": True,
+        "accessible": True,
+        "runtime_error_screen": True,
+    },
+}
 
 
-def build_generated_npc_seeds():
-    seeds = []
-
-    for first in NPC_FIRST_NAMES:
-        for last in NPC_LAST_NAMES:
-            seeds.append(
-                {
-                    "first": first,
-                    "last": last,
-                    "role": random.choice(NPC_ROLES),
-                    "type": random.choice(NPC_TYPES),
-                    "trait": random.choice(NPC_TRAITS),
-                    "relationship": random.choice(NPC_RELATIONSHIPS),
-                    "secret": random.choice(NPC_SECRETS),
-                    "dialogue": random.choice(NPC_DIALOGUE),
-                }
-            )
-
-    return seeds
+def read_text(path: Path) -> str:
+    if not path.exists():
+        raise FileNotFoundError(f"Missing required file: {path}")
+    return path.read_text(encoding="utf-8")
 
 
-# ============================================================
-# BUILD CONFIG
-# ============================================================
-
-def build_config():
-    rng = random.SystemRandom()
-
-    build_identity = (
-        f"AC-{rng.randrange(100000, 999999)}-"
-        f"{rng.randrange(1000, 9999)}"
-    )
-
-    ui = {
-        "family": safe_choice(rng, UI_FAMILIES),
-        "layout": safe_choice(rng, LAYOUTS),
-        "nav": safe_choice(rng, NAVS),
-        "hero_mode": safe_choice(rng, HERO_MODES),
-        "density": safe_choice(rng, DENSITIES),
-        "decoration": safe_choice(rng, DECORATIONS),
-    }
-
-    config = {
-        "version": "4.0.0",
-
-        "build_identity": build_identity,
-
-        "generator": {
-            "name": "Absurd Chaos Portfolio Generator",
-            "version": "4.0.0",
-            "language": "Python",
-            "runtime": "Browser JavaScript",
-        },
-
-        "runtime_policy": {
-            "browser_memory_only": True,
-            "persistence": False,
-            "database": False,
-            "api": False,
-            "cookies": False,
-            "local_storage": False,
-            "session_storage": False,
-            "indexed_db": False,
-            "network_requests": False,
-        },
-
-        "ui_system": {
-            "families": UI_FAMILIES,
-            "layouts": LAYOUTS,
-            "navs": NAVS,
-            "hero_modes": HERO_MODES,
-            "densities": DENSITIES,
-            "decorations": DECORATIONS,
-            "default": ui,
-        },
-
-        "content_limits": CONTENT_LIMITS,
-
-        "card_labels": CARD_LABELS,
-
-        "narrative_settings": {
-            "hooks": STORY_HOOKS,
-            "turns": STORY_TURNS,
-            "closings": CLOSING_LINES,
-        },
-
-        "generation_counts": {
-            "projects": 64,
-            "npcs": 80,
-            "worlds": 15,
-            "experiences": 48,
-            "incidents": 64,
-            "quests": 48,
-        },
-
-        "generated_world_seeds": build_generated_world_seeds(),
-        "generated_npc_seeds": build_generated_npc_seeds(),
-
-        "vocabulary": {
-            "names": NAMES,
-            "titles": TITLES,
-            "specialties": SPECIALTIES,
-            "personalities": PERSONALITIES,
-            "education": EDUCATION,
-            "locations": LOCATIONS,
-            "industries": INDUSTRIES,
-            "project_types": PROJECT_TYPES,
-            "project_names": PROJECT_NAMES,
-            "project_problems": PROJECT_PROBLEMS,
-            "project_solutions": PROJECT_SOLUTIONS,
-            "project_failures": PROJECT_FAILURES,
-            "project_outcomes": PROJECT_OUTCOMES,
-            "project_notes": PROJECT_NOTES,
-            "experience_roles": EXPERIENCE_ROLES,
-            "experience_openings": EXPERIENCE_OPENINGS,
-            "experience_incidents": EXPERIENCE_INCIDENTS,
-            "experience_lessons": EXPERIENCE_LESSONS,
-            "npc_first_names": NPC_FIRST_NAMES,
-            "npc_last_names": NPC_LAST_NAMES,
-            "npc_roles": NPC_ROLES,
-            "npc_types": NPC_TYPES,
-            "npc_traits": NPC_TRAITS,
-            "npc_relationships": NPC_RELATIONSHIPS,
-            "npc_secrets": NPC_SECRETS,
-            "npc_dialogue": NPC_DIALOGUE,
-            "incident_types": INCIDENT_TYPES,
-            "incident_openers": INCIDENT_OPENERS,
-            "incident_consequences": INCIDENT_CONSEQUENCES,
-            "quest_objectives": QUEST_OBJECTIVES,
-            "quest_rewards": QUEST_REWARDS,
-            "statuses": STATUSES,
-            "risk_levels": RISK_LEVELS,
-        },
-
-        "build_randomization": {
-            "enabled": True,
-            "random_source": "python-system-random",
-        },
-
-        "features": {
-            "new_portfolio_every_refresh": True,
-            "new_portfolio_button": True,
-            "new_ui_every_generation": True,
-            "npc_connected_projects": True,
-            "npc_connected_experience": True,
-            "npc_connected_incidents": True,
-            "fictional_worlds": True,
-            "card_first_content": True,
-            "responsive": True,
-            "accessible": True,
-        },
-    }
-
-    return config
-
-
-# ============================================================
-# VALIDATION
-# ============================================================
-
-def validate_config(config):
+def validate_config():
     required = [
         "version",
-        "build_identity",
         "runtime_policy",
         "ui_system",
-        "content_limits",
-        "generated_world_seeds",
-        "generated_npc_seeds",
+        "pools",
+        "limits",
+        "features",
     ]
 
     for key in required:
-        if key not in config:
-            raise ValueError(
-                f"Missing required configuration key: {key}"
-            )
+        if key not in CONFIG:
+            raise RuntimeError(f"Missing configuration key: {key}")
 
-    policy = config["runtime_policy"]
+    policy = CONFIG["runtime_policy"]
 
     forbidden = [
-        "persistence",
+        "localStorage",
+        "sessionStorage",
+        "indexedDB",
+        "cookies",
         "database",
         "api",
-        "cookies",
-        "local_storage",
-        "session_storage",
-        "indexed_db",
+        "fetch",
+        "network_requests",
+        "persistent_state",
     ]
 
     for key in forbidden:
         if policy.get(key) is not False:
-            raise ValueError(
-                f"Runtime policy violation: {key}"
+            raise RuntimeError(
+                f"Runtime policy violation: {key} must be false."
             )
 
-    ui = config["ui_system"]
+    if policy.get("browser_memory_only") is not True:
+        raise RuntimeError("browser_memory_only must be true")
+
+    ui = CONFIG["ui_system"]
 
     for key in [
         "families",
@@ -1518,140 +1166,89 @@ def validate_config(config):
         "decorations",
     ]:
         if not ui.get(key):
-            raise ValueError(
-                f"UI system list is empty: {key}"
-            )
+            raise RuntimeError(f"UI pool cannot be empty: {key}")
 
-    if not config["generated_world_seeds"]:
-        raise ValueError("No world seeds generated.")
+    pools = CONFIG["pools"]
 
-    if not config["generated_npc_seeds"]:
-        raise ValueError("No NPC seeds generated.")
+    for key in [
+        "worlds",
+        "npc_seeds",
+        "titles",
+        "specialties",
+        "personalities",
+        "project_names",
+        "problems",
+        "solutions",
+        "failures",
+        "outcomes",
+        "incidents",
+        "quests",
+    ]:
+        if not pools.get(key):
+            raise RuntimeError(f"Content pool cannot be empty: {key}")
 
-    limits = config["content_limits"]
 
-    if limits["experience_technologies_min"] < 1:
-        raise ValueError(
-            "Experience technology minimum must be positive."
-        )
+def make_build_identity() -> str:
+    return secrets.token_hex(8).upper()
 
-    if limits["project_technologies_min"] < 1:
-        raise ValueError(
-            "Project technology minimum must be positive."
-        )
-
-
-# ============================================================
-# MAIN
-# ============================================================
 
 def main():
-    if not TEMPLATE_FILE.exists():
-        raise FileNotFoundError(
-            f"Missing template: {TEMPLATE_FILE}"
-        )
+    validate_config()
 
-    if not CSS_FILE.exists():
-        raise FileNotFoundError(
-            f"Missing CSS: {CSS_FILE}"
-        )
+    template = read_text(TEMPLATE_FILE)
+    css = read_text(CSS_FILE)
+    js = read_text(JS_FILE)
 
-    if not JS_FILE.exists():
-        raise FileNotFoundError(
-            f"Missing JavaScript: {JS_FILE}"
-        )
+    build_identity = make_build_identity()
 
-    config = build_config()
+    runtime_config = dict(CONFIG)
+    runtime_config["build_identity"] = build_identity
 
-    validate_config(config)
-
-    template = TEMPLATE_FILE.read_text(
-        encoding="utf-8"
-    )
-
-    css = CSS_FILE.read_text(
-        encoding="utf-8"
-    )
-
-    js = JS_FILE.read_text(
-        encoding="utf-8"
-    )
-
-    generated_config = json.dumps(
-        config,
+    serialized_config = json.dumps(
+        runtime_config,
         ensure_ascii=False,
         separators=(",", ":"),
     )
 
     output = template
 
-    output = output.replace(
-        "{{GENERATED_CONFIG}}",
-        generated_config,
-    )
+    replacements = {
+        "{{GENERATED_CONFIG}}": serialized_config,
+        "{{GENERATED_CSS}}": css,
+        "{{GENERATED_JS}}": js,
+    }
 
-    output = output.replace(
-        "{{GENERATED_CSS}}",
-        css,
-    )
+    for placeholder, value in replacements.items():
+        output = output.replace(placeholder, value)
 
-    output = output.replace(
-        "{{GENERATED_JS}}",
-        js,
-    )
-
-    unresolved = re.findall(
-        r"\{\{[^}]+\}\}",
-        output,
-    )
+    unresolved = re.findall(r"\{\{[A-Z0-9_]+\}\}", output)
 
     if unresolved:
-        raise ValueError(
+        raise RuntimeError(
             "Unresolved template placeholders: "
-            + ", ".join(unresolved)
+            + ", ".join(sorted(set(unresolved)))
         )
 
-    OUTPUT_DIR.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
-    OUTPUT_FILE.write_text(
-        output,
-        encoding="utf-8",
-    )
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    OUTPUT_FILE.write_text(output, encoding="utf-8")
 
     print()
-    print("=" * 64)
-    print("ABSURD CHAOS PORTFOLIO")
-    print("=" * 64)
-    print(f"Build identity : {config['build_identity']}")
-    print(f"Version        : {config['version']}")
-    print(f"Output         : {OUTPUT_FILE}")
-    print(
-        "UI default     : "
-        f"{config['ui_system']['default']['family']} / "
-        f"{config['ui_system']['default']['layout']} / "
-        f"{config['ui_system']['default']['nav']}"
-    )
-    print(
-        "Worlds         : "
-        f"{len(config['generated_world_seeds'])}"
-    )
-    print(
-        "NPC seeds      : "
-        f"{len(config['generated_npc_seeds'])}"
-    )
-    print(
-        "Persistence    : "
-        "DISABLED"
-    )
-    print(
-        "Browser memory : "
-        "ENABLED"
-    )
-    print("=" * 64)
+    print("=" * 72)
+    print(" ABSURD CHAOS PORTFOLIO")
+    print("=" * 72)
+    print(f"Version       : {CONFIG['version']}")
+    print(f"Build Identity: {build_identity}")
+    print(f"Output        : {OUTPUT_FILE}")
+    print("Runtime       : Browser memory only")
+    print("Persistence   : DISABLED")
+    print("Network       : DISABLED")
+    print("Database      : DISABLED")
+    print("Random UI     : ENABLED")
+    print("Random World  : ENABLED")
+    print("NPC Linking   : ENABLED")
+    print("=" * 72)
     print()
+    print("Build completed successfully.")
 
 
 if __name__ == "__main__":
