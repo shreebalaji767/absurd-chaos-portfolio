@@ -69,6 +69,35 @@
     ogDescription.content = description.slice(0, 300);
 
     const iconUrl = new URL("./assets/icon.svg", window.location.href).href;
+
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.rel = "canonical";
+      document.head.appendChild(canonical);
+    }
+    canonical.href = window.__ABSURD_RUNTIME__?.getShareUrl?.() || window.location.href;
+
+    let jsonLd = document.querySelector('script[type="application/ld+json"]');
+    if (!jsonLd) {
+      jsonLd = document.createElement("script");
+      jsonLd.type = "application/ld+json";
+      document.head.appendChild(jsonLd);
+    }
+    jsonLd.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: title,
+      description,
+      url: canonical.href
+    });
+
+    const themeColor = document.querySelector('meta[name="theme-color"]');
+    if (themeColor) {
+      themeColor.content = getComputedStyle(document.documentElement)
+        .getPropertyValue("--accent")
+        .trim() || "#090a0d";
+    }
     const ogImage = document.querySelector('meta[property="og:image"]');
     if (ogImage) ogImage.content = iconUrl;
     const twitterImage = document.querySelector('meta[name="twitter:image"]');
