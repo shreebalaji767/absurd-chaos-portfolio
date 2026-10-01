@@ -1,0 +1,19 @@
+{
+  "name": "Absurd Portfolio",
+  "short_name": "Absurd Portfolio",
+  "description": "A procedural professional portfolio that generates a new fictional universe and career record on every load.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#090a0d",
+  "theme_color": "#090a0d",
+  "icons": [
+    {
+      "src": "./assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
