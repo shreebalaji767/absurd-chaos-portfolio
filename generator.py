@@ -1025,12 +1025,12 @@ def make_config():
     build_id = secrets.token_hex(8)
 
     config = {
-        "version": "4.0.0",
+        "version": "6.0.0",
         "build_identity": build_id,
 
         "generator": {
             "name": "Procedural Portfolio Generator",
-            "version": "4.0.0",
+            "version": "6.0.0",
             "generated_at_build": True,
         },
 
