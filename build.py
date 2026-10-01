@@ -20,6 +20,7 @@ def copy_runtime_assets():
     ICON_DEST.mkdir(parents=True, exist_ok=True)
     files = {
         "manifest.webmanifest": GENERATED / "manifest.webmanifest",
+        "manifest.json": GENERATED / "manifest.json",
         "sw.js": GENERATED / "sw.js",
         "robots.txt": GENERATED / "robots.txt",
         "icon.svg": ASSET_DEST / "icon.svg",
@@ -31,6 +32,10 @@ def copy_runtime_assets():
         if not source.exists():
             raise FileNotFoundError(f"Missing build asset: {source}")
         shutil.copy2(source, destination)
+
+    # Keep a JSON manifest alias for hosts that do not assign the
+    # application/manifest+json MIME type to .webmanifest files.
+    shutil.copy2(ASSET_SOURCE / "manifest.webmanifest", GENERATED / "manifest.json")
 
     for icon in ICON_SOURCE.glob("*.svg"):
         shutil.copy2(icon, ICON_DEST / icon.name)
