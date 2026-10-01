@@ -2,6 +2,7 @@ from pathlib import Path
 import json
 import re
 import secrets
+import shutil
 import sys
 
 
@@ -13,6 +14,17 @@ JS_FILE = ROOT / "static" / "app.js"
 
 OUTPUT_DIR = ROOT / "generated"
 OUTPUT_FILE = OUTPUT_DIR / "index.html"
+ASSET_OUTPUT_DIR = OUTPUT_DIR / "assets"
+
+RUNTIME_ASSETS = {
+    "pwa.css": ASSET_OUTPUT_DIR / "pwa.css",
+    "pwa.js": ASSET_OUTPUT_DIR / "pwa.js",
+    "icon.svg": ASSET_OUTPUT_DIR / "icon.svg",
+    "manifest.webmanifest": OUTPUT_DIR / "manifest.webmanifest",
+    "manifest.json": OUTPUT_DIR / "manifest.json",
+    "favicon.svg": OUTPUT_DIR / "favicon.svg",
+    "robots.txt": OUTPUT_DIR / "robots.txt",
+}
 
 
 # ============================================================
@@ -1202,8 +1214,39 @@ def main():
                 + ", ".join(sorted(set(unresolved)))
             )
 
+        if OUTPUT_DIR.exists():
+            shutil.rmtree(OUTPUT_DIR)
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        ASSET_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
         OUTPUT_FILE.write_text(output, encoding="utf-8")
+
+        # Render currently builds with python3 generator.py, so the generator
+        # must produce the complete static publish directory itself.
+        sources = {
+            "pwa.css": ROOT / "static" / "pwa.css",
+            "pwa.js": ROOT / "static" / "pwa.js",
+            "icon.svg": ROOT / "static" / "icon.svg",
+            "manifest.webmanifest": ROOT / "static" / "manifest.webmanifest",
+            "manifest.json": ROOT / "static" / "manifest.webmanifest",
+            "favicon.svg": ROOT / "static" / "icon.svg",
+            "robots.txt": ROOT / "static" / "robots.txt",
+        }
+        for name, source in sources.items():
+            if not source.exists():
+                raise FileNotFoundError(f"Missing runtime asset: {source}")
+            shutil.copy2(source, RUNTIME_ASSETS[name])
+
+        required_runtime = [
+            OUTPUT_FILE,
+            RUNTIME_ASSETS["pwa.css"],
+            RUNTIME_ASSETS["pwa.js"],
+            RUNTIME_ASSETS["icon.svg"],
+            RUNTIME_ASSETS["manifest.json"],
+            RUNTIME_ASSETS["favicon.svg"],
+        ]
+        missing = [str(path) for path in required_runtime if not path.exists()]
+        if missing:
+            raise RuntimeError("Build output missing required files: " + ", ".join(missing))
 
         print()
         print("==============================================")
