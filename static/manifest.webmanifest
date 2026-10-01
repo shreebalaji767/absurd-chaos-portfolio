@@ -1,56 +1,39 @@
 {
   "name": "BLSSNVJ21 — Absurd Portfolio",
   "short_name": "BLSSNVJ21",
-  "description": "A procedurally generated interactive portfolio and fictional professional universe.",
+  "description": "BLSSNVJ21 — a clean, absurd, procedurally generated interactive portfolio and fictional professional universe.",
   "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "display_override": [
-    "window-controls-overlay",
-    "standalone",
-    "minimal-ui"
-  ],
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "any",
   "background_color": "#090a0d",
   "theme_color": "#090a0d",
   "lang": "en",
   "dir": "ltr",
-  "categories": [
-    "portfolio",
-    "productivity",
-    "entertainment"
-  ],
+  "categories": ["portfolio", "productivity", "entertainment"],
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "./icons/icon-192.svg",
-      "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "./icons/icon-512.svg",
-      "sizes": "512x512",
+      "src": "./assets/icon.svg",
+      "sizes": "128x128 192x192 512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     }
   ],
   "shortcuts": [
     {
-      "name": "Generate Portfolio",
+      "name": "Generate New Portfolio",
       "short_name": "Generate",
-      "url": "./?action=generate"
+      "url": "./?new=1",
+      "icons": [{ "src": "./assets/icon.svg", "sizes": "128x128", "type": "image/svg+xml" }]
     },
     {
       "name": "Profile",
       "short_name": "Profile",
-      "url": "./#profile"
-    },
-    {
-      "name": "Work",
-      "short_name": "Work",
-      "url": "./#work"
+      "url": "./#profile",
+      "icons": [{ "src": "./assets/icon.svg", "sizes": "128x128", "type": "image/svg+xml" }]
     }
   ]
 }
