@@ -1,4 +1,34 @@
-/* Production enhancement layer */
+/* BLSSNVJ21 production UI layer */
+:root { --pwa-control-height: 40px; }
+.utility-actions {
+  flex-wrap: wrap;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+}
+.utility-button {
+  min-height: var(--pwa-control-height);
+  border-radius: 9px;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+.utility-button.primary {
+  background: var(--accent);
+  color: var(--text-on-accent, #fff);
+  border-color: transparent;
+  box-shadow: 0 5px 18px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.utility-button.primary:hover {
+  background: color-mix(in srgb, var(--accent) 88%, #fff);
+  border-color: transparent;
+}
+.utility-button:focus-visible,
+.mobile-nav-toggle:focus-visible,
+.mobile-navigation a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .utility-actions {
   display: flex;
   align-items: center;
@@ -229,4 +259,13 @@
 @supports (padding: max(0px)) {
   .topbar { padding-top: max(0px, env(safe-area-inset-top)); }
   .footer { padding-bottom: max(0px, env(safe-area-inset-bottom)); }
+}
+
+@media (max-width: 720px) {
+  .utility-actions { justify-content: stretch; }
+  .utility-actions .utility-button { flex: 1 1 auto; }
+  .utility-actions .utility-button.primary { flex: 1.2 1 auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .utility-button { transition: none !important; }
 }
