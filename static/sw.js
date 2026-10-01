@@ -5,7 +5,9 @@ const CORE = [
   "./manifest.webmanifest",
   "./assets/icon.svg",
   "./assets/pwa.css",
-  "./assets/pwa.js"
+  "./assets/pwa.js",
+  "./icons/icon-192.svg",
+  "./icons/icon-512.svg"
 ];
 
 self.addEventListener("install", (event) => {
