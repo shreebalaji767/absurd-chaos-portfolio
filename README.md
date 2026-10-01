@@ -1,67 +1,61 @@
 # Absurd Portfolio
 
-A procedural portfolio generator that creates a new professional portfolio,
-fictional universe, characters, projects, lore, and visual interface every
-time the page is refreshed.
+A procedural portfolio generator that creates a new professional portfolio, fictional universe, characters, projects, lore, and visual interface every time the page is loaded or regenerated.
 
-The project is intentionally designed as a static website.
+The project remains deliberately **static, dependency-light, and browser-memory-only**.
 
-## Core idea
+## v5 upgrades
+- Installable PWA support.
+- Offline-first service worker for the generated static site.
+- SVG browser/app icon.
+- Runtime SEO metadata updates for every generated portfolio.
+- Open Graph and Twitter metadata.
+- Print-optimized portfolio output.
+- Copy-current-portfolio snapshot utility.
+- Install button when supported by the browser.
+- Keyboard shortcuts: G = generate, P = print, ? = shortcuts.
+- Responsive utility controls and reduced-motion support.
+- Production build script that copies runtime assets into generated/.
+- No database, authentication, cookies, localStorage, sessionStorage, or IndexedDB.
 
-Python is the build-time generator.
+## Build
+Requires Python 3.9+ and no third-party Python packages.
 
-The browser-side JavaScript is the runtime procedural engine required to
-generate a new portfolio after every page load.
+Run:
 
-Architecture:
+    python3 build.py
 
-Python
-  ↓
-generate.py
-  ↓
-generated/index.html
-  ↓
-Static hosting
-  ↓
-Browser
-  ↓
-Procedural generation in RAM
-  ↓
-New portfolio / world / UI
+Then serve generated/ over HTTP:
 
-## No backend
+    cd generated
+    python3 -m http.server 8000
 
-This project does not use:
+Open http://localhost:8000/. PWA features require HTTPS or localhost.
 
-- Flask
-- FastAPI
-- Django
-- Node server
-- PHP
-- API server
-- database
-- authentication
-- server sessions
+## Architecture
+Python -> generator.py -> generated/index.html -> build.py -> static hosting -> browser RAM generation.
 
-## No persistent browser storage
+## Runtime model
+Every page load creates a new portfolio in memory. The Generate button creates another without a network request.
 
-This project deliberately does not use:
+The portfolio contains a professional identity, education, specialties, career history, projects, technical stacks, fictional world, factions, contacts, incidents, quests, timeline, archive metadata, and randomized visual system.
 
-- localStorage
-- sessionStorage
-- IndexedDB
-- cookies
+The service worker caches only the generated static site assets for offline loading; it does not create application data storage.
 
-Everything generated after the page loads exists only in JavaScript memory.
+## Structure
 
-Refreshing the page destroys the previous runtime state.
+    generator.py
+    build.py
+    render.yaml
+    templates/index.html
+    static/app.js
+    static/style.css
+    static/pwa.css
+    static/pwa.js
+    static/sw.js
+    static/icon.svg
+    static/manifest.webmanifest
+    generated/  (build output)
 
-## No fixed portfolio pool
-
-The project does not contain:
-
-```text
-portfolio-001
-portfolio-002
-portfolio-003
-...
+## License
+MIT
