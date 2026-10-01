@@ -322,7 +322,7 @@
         button.hidden = q && !button.textContent.toLowerCase().includes(q);
       });
     });
-    $("[data-command]", palette).forEach((button) => {
+    Array.from(palette.querySelectorAll("[data-command]")).forEach((button) => {
       button.addEventListener("click", () => {
         const action = button.dataset.command;
         close();
