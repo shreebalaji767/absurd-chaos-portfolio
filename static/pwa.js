@@ -312,10 +312,10 @@
     const open = () => {
       palette.hidden = false;
       search.value = "";
-      $("[data-command]", palette).forEach((b) => b.hidden = false);
+      Array.from(palette.querySelectorAll("[data-command]")).forEach((b) => b.hidden = false);
       requestAnimationFrame(() => search.focus());
     };
-    $("[data-command-close]", palette).forEach((el) => el.addEventListener("click", close));
+    Array.from(palette.querySelectorAll("[data-command-close]")).forEach((el) => el.addEventListener("click", close));
     search.addEventListener("input", () => {
       const q = search.value.trim().toLowerCase();
       $("[data-command]", palette).forEach((button) => {
