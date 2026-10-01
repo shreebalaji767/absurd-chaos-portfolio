@@ -1,4 +1,4 @@
-const CACHE = "absurd-portfolio-v11";
+const CACHE = "absurd-portfolio-v12";
 const CORE = [
   "./",
   "./index.html",
