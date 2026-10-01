@@ -20,7 +20,6 @@ def copy_runtime_assets():
     ICON_DEST.mkdir(parents=True, exist_ok=True)
     files = {
         "manifest.webmanifest": GENERATED / "manifest.webmanifest",
-        "manifest.json": GENERATED / "manifest.json",
         "sw.js": GENERATED / "sw.js",
         "robots.txt": GENERATED / "robots.txt",
         "icon.svg": ASSET_DEST / "icon.svg",
