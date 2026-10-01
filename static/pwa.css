@@ -419,3 +419,39 @@
   .blss-command,
   .blss-network-status { display: none !important; }
 }
+
+
+/* =========================================================
+   THEME-SAFE TEXT COLORS
+   ========================================================= */
+.utility-actions,
+.utility-button,
+.blss-command,
+.blss-command-panel,
+.blss-command-list button,
+.blss-command-search,
+.blss-back-top,
+.blss-network-status,
+.utility-status {
+  color: var(--text) !important;
+}
+.utility-button.primary {
+  color: var(--text-on-accent, #fff) !important;
+}
+.blss-command-search::placeholder {
+  color: var(--muted) !important;
+  opacity: 1;
+}
+.blss-command-footer,
+.blss-command-footer kbd {
+  color: var(--muted) !important;
+}
+.blss-command-footer kbd {
+  background: var(--surface-2) !important;
+  border-color: var(--border) !important;
+}
+.utility-button:hover,
+.blss-command-list button:hover,
+.blss-command-list button:focus-visible {
+  color: var(--text) !important;
+}
