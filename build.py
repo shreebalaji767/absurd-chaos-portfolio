@@ -32,12 +32,35 @@ def copy_runtime_assets():
             raise FileNotFoundError(f"Missing build asset: {source}")
         shutil.copy2(source, destination)
 
-    # Keep a JSON manifest alias for hosts that do not assign the
-    # application/manifest+json MIME type to .webmanifest files.
+    # Keep a JSON manifest alias for static hosts that serve .webmanifest
+    # with an unsupported MIME type. The browser can consume the .json file.
     shutil.copy2(ASSET_SOURCE / "manifest.webmanifest", GENERATED / "manifest.json")
+
+    # Serve the brand icon from the site root so browsers stop probing for
+    # the default /favicon.ico and the icon works from every page depth.
+    shutil.copy2(ASSET_SOURCE / "icon.svg", GENERATED / "favicon.svg")
+
+    # A static 404 page prevents direct navigation to an unknown route from
+    # returning an unstyled host error page.
+    shutil.copy2(GENERATED / "index.html", GENERATED / "404.html")
 
     for icon in ICON_SOURCE.glob("*.svg"):
         shutil.copy2(icon, ICON_DEST / icon.name)
+
+    required = [
+        GENERATED / "index.html",
+        GENERATED / "404.html",
+        GENERATED / "manifest.json",
+        GENERATED / "manifest.webmanifest",
+        GENERATED / "favicon.svg",
+        GENERATED / "sw.js",
+        ASSET_DEST / "icon.svg",
+        ASSET_DEST / "pwa.css",
+        ASSET_DEST / "pwa.js",
+    ]
+    missing = [str(path.relative_to(ROOT)) for path in required if not path.is_file()]
+    if missing:
+        raise RuntimeError("Build output verification failed: " + ", ".join(missing))
 
 def main():
     clean_generated()
