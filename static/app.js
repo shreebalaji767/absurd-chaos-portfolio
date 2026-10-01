@@ -3774,7 +3774,7 @@
                             </span>
 
                             <span class="brand-subtitle">
-                                ${escapeHTML(
+                                BLSSNVJ21 · ${escapeHTML(
                                     portfolio.title
                                 )}
                             </span>
@@ -3837,7 +3837,7 @@
                     <div>
 
                         <div class="footer-title">
-                            ${escapeHTML(
+                            BLSSNVJ21 · ${escapeHTML(
                                 portfolio.name
                             )}
                         </div>
@@ -4007,7 +4007,7 @@
         `;
 
         document.title =
-            `${portfolio.name} — ${portfolio.title}`;
+            `BLSSNVJ21 — ${portfolio.name} — ${portfolio.title}`;
 
         wireInteractions();
 
