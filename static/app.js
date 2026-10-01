@@ -51,8 +51,48 @@
         npcIndex: new Map(),
         projectIndex: new Map(),
         experienceIndex: new Map(),
-        worldIndex: new Map()
+        worldIndex: new Map(),
+        seed: null,
+        rngState: null
     };
+
+    function hashSeed(value) {
+        let hash = 2166136261;
+        const text = String(value);
+
+        for (let i = 0; i < text.length; i++) {
+            hash ^= text.charCodeAt(i);
+            hash = Math.imul(hash, 16777619);
+        }
+
+        return hash >>> 0 || 0x9e3779b9;
+    }
+
+    function createRandomSeed() {
+        try {
+            if (window.crypto && typeof window.crypto.getRandomValues === "function") {
+                const buffer = new Uint32Array(2);
+                window.crypto.getRandomValues(buffer);
+                return `${buffer[0].toString(16)}${buffer[1].toString(16)}`;
+            }
+        } catch (_) {}
+
+        return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+    }
+
+    function setGenerationSeed(seed) {
+        const normalized = safe(seed, createRandomSeed()).slice(0, 120);
+        runtime.seed = normalized;
+        runtime.rngState = hashSeed(normalized);
+    }
+
+    function seededRandom() {
+        runtime.rngState += 0x6D2B79F5;
+        let value = runtime.rngState;
+        value = Math.imul(value ^ (value >>> 15), value | 1);
+        value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+        return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+    }
 
 
     /* ========================================================
@@ -71,17 +111,8 @@
        ======================================================== */
 
     function random() {
-        try {
-            if (
-                window.crypto &&
-                typeof window.crypto.getRandomValues === "function"
-            ) {
-                const buffer = new Uint32Array(1);
-                window.crypto.getRandomValues(buffer);
-                return buffer[0] / 4294967296;
-            }
-        } catch (_) {
-            // fallback below
+        if (runtime.rngState !== null) {
+            return seededRandom();
         }
 
         return Math.random();
@@ -3842,6 +3873,13 @@
                         </div>
 
                         <div>
+                            SEED
+                            ${escapeHTML(
+                                runtime.seed || "runtime"
+                            )}
+                        </div>
+
+                        <div>
                             BUILD
                             ${escapeHTML(
                                 CONFIG.version
@@ -4163,6 +4201,8 @@
 
     function generateAndRender() {
         try {
+            setGenerationSeed(createRandomSeed());
+
             const portfolio =
                 generateUniquePortfolio();
 
@@ -4243,6 +4283,22 @@
 
     function boot() {
         try {
+            const requestedSeed =
+                new URLSearchParams(window.location.search).get("seed");
+
+            setGenerationSeed(
+                requestedSeed || createRandomSeed()
+            );
+
+            window.__ABSURD_RUNTIME__ = {
+                getSeed: () => runtime.seed,
+                getShareUrl: () => {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set("seed", runtime.seed);
+                    return url.toString();
+                }
+            };
+
             const portfolio =
                 generateUniquePortfolio();
 
