@@ -262,10 +262,119 @@
     updateInstallButton();
   }
 
+  function addPremiumUI() {
+    if (!document.body || document.querySelector(".blss-command")) return;
+
+    const progress = document.createElement("div");
+    progress.className = "blss-scroll-progress";
+    progress.setAttribute("aria-hidden", "true");
+    document.body.appendChild(progress);
+
+    const top = document.createElement("button");
+    top.type = "button";
+    top.className = "blss-back-top";
+    top.textContent = "↑";
+    top.setAttribute("aria-label", "Back to top");
+    top.hidden = true;
+    document.body.appendChild(top);
+    top.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+
+    const palette = document.createElement("div");
+    palette.className = "blss-command";
+    palette.hidden = true;
+    palette.innerHTML = `
+      <div class="blss-command-backdrop" data-command-close></div>
+      <section class="blss-command-panel" role="dialog" aria-modal="true" aria-labelledby="blss-command-title">
+        <div class="blss-command-head">
+          <div>
+            <p class="eyebrow">BLSSNVJ21</p>
+            <h2 id="blss-command-title">Command Center</h2>
+          </div>
+          <button type="button" class="utility-button" data-command-close aria-label="Close command center">Esc</button>
+        </div>
+        <input class="blss-command-search" type="search" placeholder="Search commands…" aria-label="Search commands" autocomplete="off">
+        <div class="blss-command-list" role="listbox">
+          <button type="button" data-command="generate">✦ Generate another portfolio</button>
+          <button type="button" data-command="profile">◎ Open profile</button>
+          <button type="button" data-command="work">▣ Open selected work</button>
+          <button type="button" data-command="world">◇ Open world</button>
+          <button type="button" data-command="copy">⧉ Copy portfolio snapshot</button>
+          <button type="button" data-command="share">↗ Copy share link</button>
+          <button type="button" data-command="print">⎙ Print portfolio</button>
+          <button type="button" data-command="install">⇩ Install BLSSNVJ21</button>
+        </div>
+        <div class="blss-command-footer">Press <kbd>Ctrl</kbd> + <kbd>K</kbd> anytime · <kbd>Esc</kbd> to close</div>
+      </section>`;
+    document.body.appendChild(palette);
+
+    const search = $(".blss-command-search", palette);
+    const close = () => { palette.hidden = true; };
+    const open = () => {
+      palette.hidden = false;
+      search.value = "";
+      $("[data-command]", palette).forEach((b) => b.hidden = false);
+      requestAnimationFrame(() => search.focus());
+    };
+    $("[data-command-close]", palette).forEach((el) => el.addEventListener("click", close));
+    search.addEventListener("input", () => {
+      const q = search.value.trim().toLowerCase();
+      $("[data-command]", palette).forEach((button) => {
+        button.hidden = q && !button.textContent.toLowerCase().includes(q);
+      });
+    });
+    $("[data-command]", palette).forEach((button) => {
+      button.addEventListener("click", () => {
+        const action = button.dataset.command;
+        close();
+        if (action === "generate") document.querySelector("[data-generate]")?.click();
+        if (action === "profile" || action === "work" || action === "world") {
+          document.querySelector("#" + action)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+        if (action === "copy") copySnapshot();
+        if (action === "share") copyShareLink();
+        if (action === "print") window.print();
+        if (action === "install") installApp();
+      });
+    });
+
+    window.addEventListener("keydown", (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        palette.hidden ? open() : close();
+      } else if (event.key === "Escape" && !palette.hidden) {
+        close();
+      }
+    });
+
+    const updateScrollUI = () => {
+      const doc = document.documentElement;
+      const max = Math.max(1, doc.scrollHeight - window.innerHeight);
+      const ratio = Math.min(1, Math.max(0, window.scrollY / max));
+      progress.style.transform = `scaleX(${ratio})`;
+      top.hidden = window.scrollY < 500;
+    };
+    window.addEventListener("scroll", updateScrollUI, { passive: true });
+    updateScrollUI();
+
+    const network = document.createElement("div");
+    network.className = "blss-network-status";
+    network.setAttribute("role", "status");
+    network.setAttribute("aria-live", "polite");
+    document.body.appendChild(network);
+    const updateNetwork = () => {
+      network.textContent = navigator.onLine ? "● Online" : "○ Offline · PWA mode";
+      network.dataset.offline = String(!navigator.onLine);
+    };
+    window.addEventListener("online", updateNetwork);
+    window.addEventListener("offline", updateNetwork);
+    updateNetwork();
+  }
+
   function refreshEnhancements() {
     upgradeBrandLogo();
     setupMobileNavigation();
     addUtilityActions();
+    addPremiumUI();
     updateMetadata();
   }
 
