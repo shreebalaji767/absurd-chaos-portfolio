@@ -4,7 +4,7 @@ A procedural portfolio generator that creates a new professional portfolio, fict
 
 The project remains deliberately **static, dependency-light, and browser-memory-only**.
 
-## v6 upgrades
+## v7 upgrades
 - Installable PWA support with updated manifest metadata.
 - Offline-first service worker for the generated static site.
 - SVG browser/app icon.
@@ -17,6 +17,9 @@ The project remains deliberately **static, dependency-light, and browser-memory-
 - Responsive utility controls and reduced-motion support.
 - Production build script that copies runtime assets into generated/.
 - Deterministic shareable seeds via `?seed=...`; no database, authentication, cookies, localStorage, sessionStorage, or IndexedDB.
+- Responsive mobile navigation with keyboard and screen-reader friendly controls.
+- Generated portfolio branding now uses the installed SVG logo in the app header.
+- Social preview image resolves to an absolute runtime URL.
 
 ## Build
 Requires Python 3.9+ and no third-party Python packages.
@@ -33,6 +36,8 @@ Then serve generated/ over HTTP:
 Open http://localhost:8000/. PWA features require HTTPS or localhost.
 
 ## Upgrade notes
+
+- v7 focuses on installability, device responsiveness, mobile navigation, and consistent branding.
 
 - Shareable deterministic portfolio URLs use the `seed` query parameter.
 - PWA metadata, crawler controls, cache versioning, and social preview metadata are maintained as part of the build.
