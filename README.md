@@ -4,8 +4,8 @@ A procedural portfolio generator that creates a new professional portfolio, fict
 
 The project remains deliberately **static, dependency-light, and browser-memory-only**.
 
-## v5 upgrades
-- Installable PWA support.
+## v6 upgrades
+- Installable PWA support with updated manifest metadata.
 - Offline-first service worker for the generated static site.
 - SVG browser/app icon.
 - Runtime SEO metadata updates for every generated portfolio.
@@ -13,10 +13,10 @@ The project remains deliberately **static, dependency-light, and browser-memory-
 - Print-optimized portfolio output.
 - Copy-current-portfolio snapshot utility.
 - Install button when supported by the browser.
-- Keyboard shortcuts: G = generate, P = print, ? = shortcuts.
+- Keyboard shortcuts: G = generate, P = print, L = copy share link, P = print, ? = shortcuts.
 - Responsive utility controls and reduced-motion support.
 - Production build script that copies runtime assets into generated/.
-- No database, authentication, cookies, localStorage, sessionStorage, or IndexedDB.
+- Deterministic shareable seeds via `?seed=...`; no database, authentication, cookies, localStorage, sessionStorage, or IndexedDB.
 
 ## Build
 Requires Python 3.9+ and no third-party Python packages.
@@ -38,7 +38,7 @@ Python -> generator.py -> generated/index.html -> build.py -> static hosting -> 
 ## Runtime model
 Every page load creates a new portfolio in memory. The Generate button creates another without a network request.
 
-The portfolio contains a professional identity, education, specialties, career history, projects, technical stacks, fictional world, factions, contacts, incidents, quests, timeline, archive metadata, and randomized visual system.
+The portfolio contains a professional identity, education, specialties, career history, projects, technical stacks, fictional world, factions, contacts, incidents, quests, timeline, archive metadata, and randomized visual system. A seed in the URL reproduces the same generated record without storing anything in the browser.
 
 The service worker caches only the generated static site assets for offline loading; it does not create application data storage.
 
