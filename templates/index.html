@@ -1,66 +1,34 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1, viewport-fit=cover"
-    >
-
-    <meta
-        name="description"
-        content="A procedurally generated fictional professional portfolio."
-    >
-
-    <meta
-        name="robots"
-        content="index,follow"
-    >
-
-    <meta
-        name="theme-color"
-        content="#0a0b0f"
-    >
-
-    <title>Professional Portfolio</title>
-
-    <style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="A procedurally generated professional portfolio.">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#090a0d">
+<meta name="color-scheme" content="dark light">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Absurd Portfolio">
+<meta property="og:description" content="A procedurally generated professional portfolio.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Absurd Portfolio">
+<meta name="twitter:description" content="A procedurally generated professional portfolio.">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+<title>Absurd Portfolio</title>
+<style>
 {{GENERATED_CSS}}
-    </style>
+</style>
+<link rel="stylesheet" href="./assets/pwa.css">
 </head>
-
 <body>
-
-<a
-    class="skip-link"
-    href="#main-content"
->
-    Skip to content
-</a>
-
+<a class="skip-link" href="#main-content">Skip to content</a>
 <div id="app"></div>
-
-<noscript>
-    <main class="noscript">
-        <div class="noscript-card">
-            <p class="eyebrow">JavaScript Required</p>
-            <h1>Portfolio requires JavaScript.</h1>
-            <p>
-                This portfolio is generated entirely in browser memory.
-                No database, storage, cookies, or network service is required.
-            </p>
-        </div>
-    </main>
-</noscript>
-
-<script>
-window.__ABSURD_CONFIG__ = {{GENERATED_CONFIG}};
-</script>
-
+<noscript><main class="noscript"><div class="noscript-card"><p class="eyebrow">JavaScript Required</p><h1>Portfolio requires JavaScript.</h1><p>This portfolio is generated entirely in browser memory. No database, storage, cookies, or network service is required.</p></div></main></noscript>
+<script>window.__ABSURD_CONFIG__ = {{GENERATED_CONFIG}};</script>
 <script>
 {{GENERATED_JS}}
 </script>
-
+<script src="./assets/pwa.js" defer></script>
 </body>
 </html>
