@@ -117,6 +117,8 @@
 
     const actions = document.createElement("div");
     actions.className = "utility-actions";
+    actions.setAttribute("role", "group");
+    actions.setAttribute("aria-label", "Portfolio tools");
     actions.innerHTML = `
       <button class="utility-button" type="button" data-pwa-copy aria-label="Copy the current portfolio snapshot">Copy</button>
       <button class="utility-button" type="button" data-pwa-share aria-label="Copy a shareable link to the current portfolio">Share</button>
