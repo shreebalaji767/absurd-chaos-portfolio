@@ -59,6 +59,18 @@
     ogDescription.content = description.slice(0, 300);
   }
 
+  async function copyShareLink() {
+    const url =
+      window.__ABSURD_RUNTIME__?.getShareUrl?.() ||
+      window.location.href;
+
+    try {
+      await navigator.clipboard.writeText(url);
+      notify("Shareable portfolio link copied.");
+    } catch (_) {
+      notify("Copy failed. Use your browser address bar to share.");
+    }
+  }
   async function copySnapshot() {
     const text = document.querySelector("#main-content")?.innerText?.trim();
     if (!text) {
@@ -97,6 +109,7 @@
     actions.className = "utility-actions";
     actions.innerHTML = `
       <button class="utility-button" type="button" data-pwa-copy aria-label="Copy the current portfolio snapshot">Copy</button>
+      <button class="utility-button" type="button" data-pwa-share aria-label="Copy a shareable link to the current portfolio">Share</button>
       <button class="utility-button" type="button" data-pwa-print aria-label="Print the current portfolio">Print</button>
       <button class="utility-button" type="button" data-pwa-install hidden aria-label="Install this portfolio as an app">Install</button>
     `;
@@ -104,6 +117,7 @@
     inner.appendChild(actions);
 
     $("[data-pwa-copy]", actions).addEventListener("click", copySnapshot);
+    $("[data-pwa-share]", actions).addEventListener("click", copyShareLink);
     $("[data-pwa-print]", actions).addEventListener("click", () => window.print());
     $("[data-pwa-install]", actions).addEventListener("click", async () => {
       if (!deferredInstallPrompt) {
@@ -148,7 +162,8 @@
     ) return;
 
     if (event.key.toLowerCase() === "p") window.print();
-    if (event.key === "?") notify("Shortcuts: G = generate · P = print · ? = show shortcuts");
+    if (event.key.toLowerCase() === "l") copyShareLink();
+    if (event.key === "?") notify("Shortcuts: G = generate · P = print · L = share link · ? = shortcuts");
   });
 
   const app = $("#app");
