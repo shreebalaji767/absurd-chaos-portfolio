@@ -208,3 +208,25 @@
     transform: none;
   }
 }
+
+/* Device-width hardening */
+@media (max-width: 360px) {
+  .topbar-inner { padding-inline: 8px; }
+  .utility-actions { gap: 5px; }
+  .utility-button { padding-inline: 8px; font-size: .72rem; }
+  .mobile-navigation a { font-size: .74rem; }
+}
+@media (min-width: 1600px) {
+  .topbar-inner, .main-content, .footer-grid { max-width: 1500px; }
+}
+@media (min-width: 2200px) {
+  .topbar-inner, .main-content, .footer-grid { max-width: 1680px; }
+}
+@media (pointer: coarse) {
+  .utility-button,
+  .mobile-navigation a { min-height: 44px; }
+}
+@supports (padding: max(0px)) {
+  .topbar { padding-top: max(0px, env(safe-area-inset-top)); }
+  .footer { padding-bottom: max(0px, env(safe-area-inset-bottom)); }
+}
