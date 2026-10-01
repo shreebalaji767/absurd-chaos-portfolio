@@ -1,11 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="BLSSNVJ21">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">BLSSNVJ21</title>
+  <desc id="desc">BLSSNVJ21 portfolio app icon.</desc>
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#11131a"/>
+      <stop offset="1" stop-color="#07080b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#8b7cff"/>
       <stop offset="1" stop-color="#55dfbd"/>
     </linearGradient>
   </defs>
-  <rect width="128" height="128" rx="30" fill="#090a0d"/>
-  <rect x="10" y="10" width="108" height="108" rx="26" fill="url(#g)"/>
-  <path d="M36 83V45c0-6 5-11 11-11h19c14 0 23 8 23 20s-9 20-23 20H50v9H36Zm14-22h15c6 0 10-3 10-8s-4-8-10-8H50v16Z" fill="#fff"/>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <rect x="18" y="18" width="476" height="476" rx="102" fill="none" stroke="url(#accent)" stroke-width="18"/>
+  <path d="M112 332V180c0-31 25-56 56-56h89c67 0 108 37 108 91 0 55-41 92-108 92h-45v25h-100Zm100-101h40c34 0 53-15 53-42 0-26-19-41-53-41h-40v83Z" fill="#fff"/>
+  <text x="256" y="418" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="46" font-weight="800" letter-spacing="4" fill="url(#accent)">BLSSNVJ21</text>
 </svg>
