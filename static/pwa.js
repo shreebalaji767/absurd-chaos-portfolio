@@ -5,6 +5,7 @@
 
   let deferredInstallPrompt = null;
   let statusTimer = null;
+  let installButton = null;
 
   function notify(message) {
     let status = $("#pwa-status");
