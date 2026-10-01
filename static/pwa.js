@@ -318,7 +318,7 @@
     Array.from(palette.querySelectorAll("[data-command-close]")).forEach((el) => el.addEventListener("click", close));
     search.addEventListener("input", () => {
       const q = search.value.trim().toLowerCase();
-      $("[data-command]", palette).forEach((button) => {
+      Array.from(palette.querySelectorAll("[data-command]")).forEach((button) => {
         button.hidden = q && !button.textContent.toLowerCase().includes(q);
       });
     });
