@@ -4,7 +4,7 @@ A procedural portfolio generator that creates a new professional portfolio, fict
 
 The project remains deliberately **static, dependency-light, and browser-memory-only**.
 
-## v7 upgrades
+## v8 upgrades
 - Installable PWA support with updated manifest metadata.
 - Offline-first service worker for the generated static site.
 - SVG browser/app icon.
@@ -40,7 +40,7 @@ Open http://localhost:8000/. PWA features require HTTPS or localhost.
 
 ## Upgrade notes
 
-- v7 focuses on installability, device responsiveness, mobile navigation, and consistent branding.
+- v8 hardens production builds, offline behavior, runtime SEO, canonical share URLs, and cache invalidation while preserving the browser-memory-only architecture.
 
 - Shareable deterministic portfolio URLs use the `seed` query parameter.
 - PWA metadata, crawler controls, cache versioning, and social preview metadata are maintained as part of the build.
@@ -53,7 +53,9 @@ Every page load creates a new portfolio in memory. The Generate button creates a
 
 The portfolio contains a professional identity, education, specialties, career history, projects, technical stacks, fictional world, factions, contacts, incidents, quests, timeline, archive metadata, and randomized visual system. A seed in the URL reproduces the same generated record without storing anything in the browser.
 
-The service worker caches only the generated static site assets for offline loading; it does not create application data storage.
+The service worker caches only same-origin generated static assets for offline loading, uses a navigation fallback, avoids third-party caching, and rotates its cache name with the application version. It does not create application data storage.
+
+Production builds now clean `generated/` before generation, preventing stale files from surviving between deployments.
 
 ## Structure
 
