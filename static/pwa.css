@@ -50,6 +50,7 @@
   .utility-actions { margin-left: 0; }
   .utility-button[data-pwa-print],
   .utility-button[data-pwa-copy] { display: none; }
+  .utility-button[data-pwa-share] { display: inline-flex; }
 }
 @media (max-width: 720px) {
   .utility-actions {
