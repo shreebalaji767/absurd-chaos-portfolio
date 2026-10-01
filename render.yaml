@@ -2,5 +2,5 @@ services:
   - type: web
     name: absurd-portfolio
     runtime: static
-    buildCommand: python3 generate.py
+    buildCommand: python3 build.py
     staticPublishPath: generated
