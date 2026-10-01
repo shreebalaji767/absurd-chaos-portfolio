@@ -67,6 +67,12 @@
       document.head.appendChild(ogDescription);
     }
     ogDescription.content = description.slice(0, 300);
+
+    const iconUrl = new URL("./assets/icon.svg", window.location.href).href;
+    const ogImage = document.querySelector('meta[property="og:image"]');
+    if (ogImage) ogImage.content = iconUrl;
+    const twitterImage = document.querySelector('meta[name="twitter:image"]');
+    if (twitterImage) twitterImage.content = iconUrl;
   }
 
   async function copyShareLink() {
@@ -111,6 +117,62 @@
     }
   }
 
+  function upgradeBrandLogo() {
+    const mark = $(".brand-mark");
+    if (!mark || mark.dataset.logoReady === "true") return;
+
+    mark.textContent = "";
+    const logo = document.createElement("img");
+    logo.src = "./assets/icon.svg";
+    logo.alt = "";
+    logo.width = 40;
+    logo.height = 40;
+    logo.decoding = "async";
+    logo.setAttribute("aria-hidden", "true");
+    mark.appendChild(logo);
+    mark.dataset.logoReady = "true";
+  }
+
+  function setupMobileNavigation() {
+    const inner = $(".topbar-inner");
+    const nav = $(".topnav");
+    if (!inner || !nav || $(".mobile-nav-toggle", inner)) return;
+
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "mobile-nav-toggle utility-button";
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-controls", "mobile-navigation");
+    toggle.setAttribute("aria-label", "Open navigation");
+    toggle.innerHTML = "<span aria-hidden=\"true\">☰</span><span class=\"mobile-nav-label\">Menu</span>";
+
+    const panel = document.createElement("div");
+    panel.className = "mobile-navigation";
+    panel.id = "mobile-navigation";
+    panel.hidden = true;
+    panel.setAttribute("aria-label", "Mobile navigation");
+
+    const links = [...nav.querySelectorAll("a")].map((link) => link.cloneNode(true));
+    links.forEach((link) => {
+      link.addEventListener("click", () => {
+        panel.hidden = true;
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.setAttribute("aria-label", "Open navigation");
+      });
+      panel.appendChild(link);
+    });
+
+    toggle.addEventListener("click", () => {
+      const open = toggle.getAttribute("aria-expanded") === "true";
+      toggle.setAttribute("aria-expanded", String(!open));
+      toggle.setAttribute("aria-label", open ? "Open navigation" : "Close navigation");
+      panel.hidden = open;
+    });
+
+    inner.appendChild(toggle);
+    inner.appendChild(panel);
+  }
+
   function addUtilityActions() {
     const inner = $(".topbar-inner");
     if (!inner || $(".utility-actions", inner)) return;
@@ -144,6 +206,8 @@
   }
 
   function refreshEnhancements() {
+    upgradeBrandLogo();
+    setupMobileNavigation();
     addUtilityActions();
     updateMetadata();
   }
