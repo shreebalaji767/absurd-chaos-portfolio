@@ -2,6 +2,7 @@
   "use strict";
 
   const $ = (selector, root = document) => root.querySelector(selector);
+  const $ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
   let deferredInstallPrompt = null;
   let statusTimer = null;
@@ -401,6 +402,7 @@
        target.isContentEditable)
     ) return;
 
+    if (event.key.toLowerCase() === "g") document.querySelector("[data-generate]")?.click();
     if (event.key.toLowerCase() === "p") window.print();
     if (event.key.toLowerCase() === "l") copyShareLink();
     if (event.key === "?") notify("Shortcuts: G = generate · P = print · L = share link · ? = shortcuts");
