@@ -5,6 +5,7 @@
 
   let deferredInstallPrompt = null;
   let statusTimer = null;
+  let installButton = null;
 
   function notify(message) {
     let status = $("#pwa-status");
@@ -146,6 +147,40 @@
     }
   }
 
+  function isStandalone() {
+    return window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone === true;
+  }
+
+  function isIOS() {
+    return /iphone|ipad|ipod/i.test(navigator.userAgent);
+  }
+
+  async function installApp() {
+    if (isStandalone()) {
+      notify("BLSSNVJ21 is already installed.");
+      return;
+    }
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      const choice = await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      if (choice?.outcome === "accepted") notify("BLSSNVJ21 installed.");
+      updateInstallButton();
+      return;
+    }
+    if (isIOS()) {
+      notify("On iPhone/iPad: Share → Add to Home Screen.");
+      return;
+    }
+    notify("Use your browser menu → Install BLSSNVJ21 / Add to Home Screen.");
+  }
+
+  function updateInstallButton() {
+    if (!installButton) return;
+    installButton.hidden = isStandalone();
+    installButton.textContent = deferredInstallPrompt ? "Install" : "Install App";
+  }
+
   function upgradeBrandLogo() {
     const mark = $(".brand-mark");
     if (!mark || mark.dataset.logoReady === "true") return;
@@ -214,7 +249,7 @@
       <button class="utility-button" type="button" data-pwa-copy aria-label="Copy the current portfolio snapshot">Copy</button>
       <button class="utility-button" type="button" data-pwa-share aria-label="Copy a shareable link to the current portfolio">Share</button>
       <button class="utility-button" type="button" data-pwa-print aria-label="Print the current portfolio">Print</button>
-      <button class="utility-button" type="button" data-pwa-install hidden aria-label="Install this portfolio as an app">Install</button>
+      <button class="utility-button primary" type="button" data-pwa-install aria-label="Install BLSSNVJ21 as an app">Install App</button>
     `;
 
     inner.appendChild(actions);
@@ -222,16 +257,9 @@
     $("[data-pwa-copy]", actions).addEventListener("click", copySnapshot);
     $("[data-pwa-share]", actions).addEventListener("click", copyShareLink);
     $("[data-pwa-print]", actions).addEventListener("click", () => window.print());
-    $("[data-pwa-install]", actions).addEventListener("click", async () => {
-      if (!deferredInstallPrompt) {
-        notify("Install is available from your browser menu.");
-        return;
-      }
-      deferredInstallPrompt.prompt();
-      await deferredInstallPrompt.userChoice;
-      deferredInstallPrompt = null;
-      actions.querySelector("[data-pwa-install]").hidden = true;
-    });
+    installButton = $("[data-pwa-install]", actions);
+    installButton.addEventListener("click", installApp);
+    updateInstallButton();
   }
 
   function refreshEnhancements() {
@@ -245,14 +273,12 @@
     event.preventDefault();
     deferredInstallPrompt = event;
     refreshEnhancements();
-    const button = $("[data-pwa-install]");
-    if (button) button.hidden = false;
+    updateInstallButton();
   });
 
   window.addEventListener("appinstalled", () => {
     deferredInstallPrompt = null;
-    const button = $("[data-pwa-install]");
-    if (button) button.hidden = true;
+    updateInstallButton();
     notify("BLSSNVJ21 installed.");
   });
 
@@ -277,7 +303,7 @@
     observer.observe(app, { childList: true });
   }
 
-  if ("serviceWorker" in navigator && window.isSecureContext) {
+  if ("serviceWorker" in navigator && window.isSecureContext && window.location.protocol !== "file:") {
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("./sw.js").catch(() => {});
     });
