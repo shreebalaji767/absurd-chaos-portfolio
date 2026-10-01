@@ -23,7 +23,7 @@
   }
 
   function updateMetadata() {
-    const title = document.title || "Absurd Portfolio";
+    const title = document.title || "BLSSNVJ21 — Absurd Portfolio";
     const description =
       $(".hero-description")?.textContent?.trim() ||
       "A procedurally generated professional portfolio.";
@@ -224,7 +224,7 @@
     deferredInstallPrompt = null;
     const button = $("[data-pwa-install]");
     if (button) button.hidden = true;
-    notify("Absurd Portfolio installed.");
+    notify("BLSSNVJ21 installed.");
   });
 
   document.addEventListener("keydown", (event) => {
