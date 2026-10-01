@@ -6,6 +6,8 @@ ROOT = Path(__file__).resolve().parent
 GENERATED = ROOT / "generated"
 ASSET_SOURCE = ROOT / "static"
 ASSET_DEST = GENERATED / "assets"
+ICON_SOURCE = ASSET_SOURCE / "icons"
+ICON_DEST = GENERATED / "icons"
 
 def clean_generated():
     # Remove stale build output before generating the new site.
@@ -15,6 +17,7 @@ def clean_generated():
 
 def copy_runtime_assets():
     ASSET_DEST.mkdir(parents=True, exist_ok=True)
+    ICON_DEST.mkdir(parents=True, exist_ok=True)
     files = {
         "manifest.webmanifest": GENERATED / "manifest.webmanifest",
         "sw.js": GENERATED / "sw.js",
@@ -28,6 +31,9 @@ def copy_runtime_assets():
         if not source.exists():
             raise FileNotFoundError(f"Missing build asset: {source}")
         shutil.copy2(source, destination)
+
+    for icon in ICON_SOURCE.glob("*.svg"):
+        shutil.copy2(icon, ICON_DEST / icon.name)
 
 def main():
     clean_generated()
