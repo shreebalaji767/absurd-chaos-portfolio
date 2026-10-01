@@ -8,6 +8,10 @@ ASSET_SOURCE = ROOT / "static"
 ASSET_DEST = GENERATED / "assets"
 
 def copy_runtime_assets():
+    # Always rebuild from a clean output directory so removed/renamed assets
+    # cannot survive from an older deployment.
+    if GENERATED.exists():
+        shutil.rmtree(GENERATED)
     ASSET_DEST.mkdir(parents=True, exist_ok=True)
     files = {
         "manifest.webmanifest": GENERATED / "manifest.webmanifest",
