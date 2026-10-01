@@ -13,7 +13,7 @@ The project remains deliberately **static, dependency-light, and browser-memory-
 - Print-optimized portfolio output.
 - Copy-current-portfolio snapshot utility.
 - Install button when supported by the browser.
-- Keyboard shortcuts: G = generate, P = print, L = copy share link, P = print, ? = shortcuts.
+- Keyboard shortcuts: G = generate, P = print, L = copy share link, ? = shortcuts.
 - Responsive utility controls and reduced-motion support.
 - Production build script that copies runtime assets into generated/.
 - Deterministic shareable seeds via `?seed=...`; no database, authentication, cookies, localStorage, sessionStorage, or IndexedDB.
