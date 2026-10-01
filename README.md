@@ -20,6 +20,9 @@ The project remains deliberately **static, dependency-light, and browser-memory-
 - Responsive mobile navigation with keyboard and screen-reader friendly controls.
 - Generated portfolio branding now uses the installed SVG logo in the app header.
 - Social preview image resolves to an absolute runtime URL.
+- **BLSSNVJ21** branding added to the page title, generated header/footer, PWA name, favicon identity, and SEO metadata.
+- Extended metadata with keywords, author, referrer policy, and Schema.org WebSite structured data.
+- Responsive hardening for very small phones, touch devices, tablets, ultrawide displays, and safe-area insets.
 
 ## Build
 Requires Python 3.9+ and no third-party Python packages.
