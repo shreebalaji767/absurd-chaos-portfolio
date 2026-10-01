@@ -71,26 +71,31 @@
 
     const iconUrl = new URL("./assets/icon.svg", window.location.href).href;
 
+    const canonicalUrl = new URL(window.location.href);
+    canonicalUrl.search = "";
+    canonicalUrl.hash = "";
+
     let canonical = document.querySelector('link[rel="canonical"]');
     if (!canonical) {
       canonical = document.createElement("link");
       canonical.rel = "canonical";
       document.head.appendChild(canonical);
     }
-    canonical.href = window.__ABSURD_RUNTIME__?.getShareUrl?.() || window.location.href;
+    canonical.href = canonicalUrl.href;
 
-    let jsonLd = document.querySelector('script[type="application/ld+json"]');
+    let jsonLd = document.querySelector('script[data-blss-schema="website"]');
     if (!jsonLd) {
       jsonLd = document.createElement("script");
       jsonLd.type = "application/ld+json";
+      jsonLd.dataset.blssSchema = "website";
       document.head.appendChild(jsonLd);
     }
     jsonLd.textContent = JSON.stringify({
       "@context": "https://schema.org",
       "@type": "WebSite",
-      name: title,
+      name: "BLSSNVJ21",
       description,
-      url: canonical.href
+      url: canonicalUrl.href
     });
 
     const themeColor = document.querySelector('meta[name="theme-color"]');
@@ -308,8 +313,19 @@
     document.body.appendChild(palette);
 
     const search = $(".blss-command-search", palette);
-    const close = () => { palette.hidden = true; };
+    let lastFocusedElement = null;
+    const focusable = () => [
+      search,
+      ...Array.from(palette.querySelectorAll("button:not([hidden])"))
+    ].filter((el) => el && !el.disabled);
+
+    const close = () => {
+      palette.hidden = true;
+      lastFocusedElement?.focus?.();
+    };
+
     const open = () => {
+      lastFocusedElement = document.activeElement;
       palette.hidden = false;
       search.value = "";
       Array.from(palette.querySelectorAll("[data-command]")).forEach((b) => b.hidden = false);
@@ -342,7 +358,20 @@
         event.preventDefault();
         palette.hidden ? open() : close();
       } else if (event.key === "Escape" && !palette.hidden) {
+        event.preventDefault();
         close();
+      } else if (event.key === "Tab" && !palette.hidden) {
+        const items = focusable();
+        if (!items.length) return;
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
       }
     });
 
@@ -415,7 +444,9 @@
 
   if ("serviceWorker" in navigator && window.isSecureContext && window.location.protocol !== "file:") {
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./sw.js").catch(() => {});
+      navigator.serviceWorker.register("./sw.js").catch(() => {
+        console.warn("BLSSNVJ21: service worker registration unavailable.");
+      });
     });
   }
 
