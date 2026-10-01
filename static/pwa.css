@@ -1,0 +1,125 @@
+/* Production enhancement layer */
+.utility-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.utility-button {
+  min-height: 40px;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 750;
+  font-size: .78rem;
+}
+.utility-button:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+.utility-button.primary {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-2));
+}
+.utility-status {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 3000;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 11px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font-size: .82rem;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+.utility-status.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (max-width: 900px) {
+  .utility-actions { margin-left: 0; }
+  .utility-button[data-pwa-print],
+  .utility-button[data-pwa-copy] { display: none; }
+}
+@media (max-width: 720px) {
+  .utility-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .utility-button {
+    min-height: 38px;
+  }
+}
+@media print {
+  @page { margin: 12mm; }
+  html, body {
+    background: #fff !important;
+    color: #111 !important;
+  }
+  .topbar,
+  .utility-actions,
+  .skip-link,
+  .hero-actions,
+  .footer,
+  [data-generate],
+  [data-pwa-install],
+  [data-pwa-copy],
+  [data-pwa-print] {
+    display: none !important;
+  }
+  body {
+    overflow: visible !important;
+  }
+  .app-shell,
+  .main-content {
+    width: 100% !important;
+    max-width: none !important;
+  }
+  .section,
+  .card,
+  .world-main,
+  .experience-card,
+  .project-card,
+  .npc-card,
+  .incident-card,
+  .quest-card {
+    break-inside: avoid;
+    box-shadow: none !important;
+  }
+  .card,
+  .fact,
+  .stat,
+  .project-metric,
+  .npc-fact,
+  .incident-note,
+  .world-rule-card,
+  .world-faction-card {
+    border-color: #ccc !important;
+    background: #fff !important;
+    color: #111 !important;
+  }
+  .card-text,
+  .world-description,
+  .npc-story p,
+  .incident-note p,
+  .project-note p,
+  .quest-card p {
+    color: #333 !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .utility-button,
+  .utility-status {
+    transition: none !important;
+  }
+}
