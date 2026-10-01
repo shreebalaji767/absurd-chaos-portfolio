@@ -32,6 +32,11 @@ Then serve generated/ over HTTP:
 
 Open http://localhost:8000/. PWA features require HTTPS or localhost.
 
+## Upgrade notes
+
+- Shareable deterministic portfolio URLs use the `seed` query parameter.
+- PWA metadata, crawler controls, cache versioning, and social preview metadata are maintained as part of the build.
+
 ## Architecture
 Python -> generator.py -> generated/index.html -> build.py -> static hosting -> browser RAM generation.
 
