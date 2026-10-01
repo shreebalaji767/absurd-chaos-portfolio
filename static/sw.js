@@ -1,4 +1,4 @@
-const CACHE = "absurd-portfolio-v5";
+const CACHE = "absurd-portfolio-v6";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./assets/icon.svg", "./assets/pwa.css", "./assets/pwa.js"];
 
 self.addEventListener("install", (event) => {
