@@ -12,6 +12,7 @@ def copy_runtime_assets():
     files = {
         "manifest.webmanifest": GENERATED / "manifest.webmanifest",
         "sw.js": GENERATED / "sw.js",
+        "robots.txt": GENERATED / "robots.txt",
         "icon.svg": ASSET_DEST / "icon.svg",
         "pwa.css": ASSET_DEST / "pwa.css",
         "pwa.js": ASSET_DEST / "pwa.js",
