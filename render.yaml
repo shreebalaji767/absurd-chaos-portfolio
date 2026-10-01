@@ -1,6 +1,5 @@
 services:
-  - type: web
-    name: absurd-portfolio
-    runtime: static
+  - type: static
+    name: absurd-chaos-portfolio
     buildCommand: python3 generator.py
     staticPublishPath: generated
