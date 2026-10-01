@@ -7,11 +7,13 @@ GENERATED = ROOT / "generated"
 ASSET_SOURCE = ROOT / "static"
 ASSET_DEST = GENERATED / "assets"
 
-def copy_runtime_assets():
-    # Always rebuild from a clean output directory so removed/renamed assets
-    # cannot survive from an older deployment.
+def clean_generated():
+    # Remove stale build output before generating the new site.
     if GENERATED.exists():
         shutil.rmtree(GENERATED)
+
+
+def copy_runtime_assets():
     ASSET_DEST.mkdir(parents=True, exist_ok=True)
     files = {
         "manifest.webmanifest": GENERATED / "manifest.webmanifest",
@@ -28,6 +30,7 @@ def copy_runtime_assets():
         shutil.copy2(source, destination)
 
 def main():
+    clean_generated()
     generator.main()
     copy_runtime_assets()
     print("Production assets copied to generated/.")
