@@ -1,17 +1,23 @@
 {
   "name": "BLSSNVJ21 — Absurd Portfolio",
   "short_name": "BLSSNVJ21",
-  "description": "A procedural professional portfolio that generates a new fictional universe and career record on every load.",
+  "description": "A procedurally generated interactive portfolio and fictional professional universe.",
+  "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "any",
   "background_color": "#090a0d",
   "theme_color": "#090a0d",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["portfolio", "productivity", "entertainment"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "./assets/icon.svg",
-      "sizes": "any",
+      "sizes": "128x128",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     }
