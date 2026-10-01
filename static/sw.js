@@ -1,8 +1,7 @@
-const CACHE = "absurd-portfolio-v10";
+const CACHE = "absurd-portfolio-v11";
 const CORE = [
   "./",
   "./index.html",
-  "./manifest.webmanifest",
   "./assets/icon.svg",
   "./assets/pwa.css",
   "./assets/pwa.js",
@@ -12,7 +11,7 @@ const CORE = [
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE)
-      .then((cache) => cache.addAll(CORE))
+      .then((cache) => Promise.all(CORE.map((url) => cache.add(url).catch(() => null))))
       .then(() => self.skipWaiting())
   );
 });
@@ -43,8 +42,10 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE).then((cache) => cache.put("./index.html", copy));
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE).then((cache) => cache.put("./index.html", copy));
+          }
           return response;
         })
         .catch(() => caches.match("./index.html"))
