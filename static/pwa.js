@@ -308,7 +308,7 @@
           <button type="button" data-command="print">⎙ Print portfolio</button>
           <button type="button" data-command="install">⇩ Install BLSSNVJ21</button>
         </div>
-        <div class="blss-command-footer">Press <kbd>Ctrl</kbd> + <kbd>K</kbd> anytime · <kbd>Esc</kbd> to close</div>
+        <div class="blss-command-footer">Press <kbd>Ctrl</kbd> + <kbd>K</kbd> anytime · <kbd>Esc</kbd> to close · <kbd>Tab</kbd> to navigate</div>
       </section>`;
     document.body.appendChild(palette);
 
@@ -430,10 +430,9 @@
        target.isContentEditable)
     ) return;
 
-    if (event.key.toLowerCase() === "g") document.querySelector("[data-generate]")?.click();
     if (event.key.toLowerCase() === "p") window.print();
     if (event.key.toLowerCase() === "l") copyShareLink();
-    if (event.key === "?") notify("Shortcuts: G = generate · P = print · L = share link · ? = shortcuts");
+    if (event.key === "?") notify("Shortcuts: G = generate · P = print · L = share link · Ctrl/Cmd+K = command center");
   });
 
   const app = $("#app");
